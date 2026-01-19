@@ -75,6 +75,10 @@ function Header() {
                 Become An Agent
               </Link>
 
+              <Link to="/logout" className="text-red-600 hover:text-red-800 font-medium">
+                Logout
+              </Link>
+
               {/* Only show "List Your Property" if user is an approved agent */}
               {user && user.agentStatus === 'approved' && (
                 <Link

@@ -21,6 +21,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import AgentDashboard from './pages/AgentDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AllProperties from './pages/AllProperties';
+import Logout from './pages/Logout';
+import VerifyEmail from './pages/VerifyEmail';
+import AgentProperties from './pages/AgentProperties';
 
 
 function App() {
@@ -48,7 +51,9 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path='/agent-dashboard' element={<AgentDashboard />} />
             <Route path="/all-properties" element={<AllProperties />} />
-            {/* Add more routes later: about, contact, login, etc. */}
+           <Route path='/logout' element={<Logout />} />
+           <Route path="/verify-email" element={<VerifyEmail />} />
+           <Route path="/agent/properties" element={<AgentProperties />} />
           </Routes>
         </main>
         <Footer />

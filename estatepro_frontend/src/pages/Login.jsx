@@ -1,45 +1,67 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '@/config/api';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     if (!email.trim()) {
-      alert('Please enter your email');
+      setError('Please enter your email');
       setLoading(false);
       return;
     }
 
-    // Create user data
-    const userData = {
-      email: email.trim(),
-      name: email.split('@')[0],
-      role: email.toLowerCase().includes('admin') ? 'admin' : 'user',
-      agentStatus: email.toLowerCase().includes('agent') ? 'approved' : 'none', // For testing agent dashboard
-    };
-
-    // Save login
-    login(userData);
-
-    // Smart redirect
-    if (userData.role === 'admin') {
-      navigate('/admin');
-    } else if (userData.agentStatus === 'approved') {
-      navigate('/agent-dashboard');
-    } else {
-      navigate('/');
+    if (!password) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    try {
+      const response = await fetch(`${API_URL}token/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || 'Login failed');
+      }
+
+      // Success: Store real JWT tokens
+      const { access, refresh } = data;
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
+
+      // Update auth context (you may fetch user profile later)
+      login({ email: email.trim() });
+
+      // Redirect to home (or change to dashboard later)
+      navigate('/');
+
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,6 +70,12 @@ function Login() {
         <h1 className="text-4xl font-bold text-text-primary text-center mb-8">
           Welcome Back
         </h1>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -58,7 +86,7 @@ function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. agent@homemu.com"
+              placeholder="Enter your email"
               required
               className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -66,13 +94,14 @@ function Login() {
 
           <div>
             <label className="block text-lg font-semibold text-text-primary mb-2">
-              Password (Demo: Any)
+              Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter anything"
+              placeholder="Enter your password"
+              required
               className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -80,7 +109,9 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-primary py-5 text-xl font-bold disabled:opacity-70"
+            className={`w-full btn-primary py-5 text-xl font-bold disabled:opacity-70 transition ${
+              loading ? 'cursor-not-allowed' : 'hover:bg-primary-dark'
+            }`}
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
@@ -92,16 +123,6 @@ function Login() {
             Sign Up
           </Link>
         </p>
-
-        <div className="mt-8 p-4 bg-bg-soft rounded-lg text-sm text-text-muted">
-          <p className="font-semibold mb-2">Demo Login Tips:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Use any email</li>
-            <li>Email with <strong>"admin"</strong> → Admin Dashboard</li>
-            <li>Email with <strong>"agent"</strong> → Agent Dashboard</li>
-            <li>Normal email → Homepage</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

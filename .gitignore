@@ -1,0 +1,22 @@
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Django specific
+*.log
+*.pot
+*.sqlite3
+media/
+staticfiles/
+
+# Node.js / Frontend builds
+node_modules/
+dist/
+.vite/
