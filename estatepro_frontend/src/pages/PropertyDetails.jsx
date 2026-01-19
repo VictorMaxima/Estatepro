@@ -13,7 +13,7 @@ function PropertyDetails() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await fetch(`${API_URL}api/property/${id}`, {
+        const response = await fetch(`${API_URL}property/${id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
