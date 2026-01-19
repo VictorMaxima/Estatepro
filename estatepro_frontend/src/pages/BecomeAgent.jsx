@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API_URL from '../config/api';
+import API_URL from '@/config/api';
 
 function BecomeAgent() {
   const [formData, setFormData] = useState({

@@ -1,7 +1,7 @@
 // src/pages/ListProperty.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API_URL from '../config/api';
+import API_URL from '@/config/api';
 
 function ListProperty() {
   const [step, setStep] = useState(1);

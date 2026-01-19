@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import API_URL from '../config/api';  // ← This is correct for files in src/pages/
+import API_URL from '@/config/api';
 
 function Logout() {
   const [loading, setLoading] = useState(true);

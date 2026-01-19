@@ -1,7 +1,7 @@
 // src/pages/VerifyEmail.jsx
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import API_URL from '../config/api';
+import API_URL from '@/config/api';
 
 function VerifyEmail() {
   const [status, setStatus] = useState('verifying');
