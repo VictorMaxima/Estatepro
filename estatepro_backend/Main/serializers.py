@@ -108,5 +108,28 @@ class ListAgentPropertySerializer(serializers.ModelSerializer):
         model = Property
         fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
-                  'images']
+                  'images', 'slug']
 
+class ListPropertySerializer(serializers.ModelSerializer):
+    images = PropertyImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Property
+        fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
+                  'slug','images', ]
+
+class AgentDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AppUser
+        fields = ["full_name", "phone_number", "email"]
+
+class PropertyDetailSerializer(serializers.ModelSerializer):
+    images = PropertyImageSerializer(many=True, read_only=True)
+    agent = AgentDetailSerializer(read_only=True)
+
+    class Meta:
+        model = Property
+        fields = ['agent','title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
+                  'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
+                  'images']

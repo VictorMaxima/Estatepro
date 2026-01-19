@@ -9,7 +9,8 @@ from rest_framework import status, viewsets, permissions
 from django.shortcuts import render
 from django.contrib.auth.backends import BaseBackend
 from .serializers import (LoginSerializer, RegisterSerializer, CreateAgentApplySerializer, ContactSerializer, ApplicationListSerializer,
-                          CreatePropertyListingSerializer, CreatePropertyImageSerializer, ListAgentPropertySerializer )
+                          CreatePropertyListingSerializer, CreatePropertyImageSerializer, ListAgentPropertySerializer, ListPropertySerializer, PropertyDetailSerializer,
+                            )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.shortcuts import get_object_or_404
@@ -155,6 +156,7 @@ class AgentApplyView(CreateAPIView):
 
     def perform_create(self, serializer):
         agent = self.request.user
+        agent.phone_number = self.phone_number
         if agent.agent_application.count() > 0:
             raise ValidationError("This agent has already made an application to be an agent")
         serializer.save(agent=agent)
@@ -226,6 +228,21 @@ class ListAgentPropertiesView(APIView):
         properties = request.user.properties.all()
         serializer = ListAgentPropertySerializer(properties, many=True)
         return Response(serializer.data)
+
+class ListPropertiesView(APIView):
+    serializer = ListPropertySerializer
+    def get(self, request):
+        properties = Property.objects.all()
+        serializer = ListPropertySerializer(properties, many=True)
+        return Response(serializer.data)
+
+class PropertyDetailView(APIView):
+    serializer = PropertyDetailSerializer
+    def get(self, request, slug):
+        property = get_object_or_404(Property, slug=slug)
+        serializer = PropertyDetailSerializer(property)
+        return Response(serializer.data)
+    
 
 
     
