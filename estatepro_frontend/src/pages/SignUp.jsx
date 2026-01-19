@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api'; // Your global API base URL
+import API_URL from '../config/api';
 
 function Signup() {
   const [formData, setFormData] = useState({

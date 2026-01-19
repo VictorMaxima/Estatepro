@@ -1,7 +1,7 @@
 // src/pages/AgentDashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import API_URL from '../config/api';
 
 function AgentDashboard() {
   const [stats, setStats] = useState({
