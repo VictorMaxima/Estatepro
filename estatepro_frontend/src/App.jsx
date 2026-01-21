@@ -20,11 +20,12 @@ import EventHalls from './pages/EventHalls';
 import AdminDashboard from './pages/AdminDashboard';
 import AgentDashboard from './pages/AgentDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import AllProperties from './pages/AllProperties';
+import Properties from './pages/AllProperties';
 import Logout from './pages/Logout';
 import VerifyEmail from './pages/VerifyEmail';
 import AgentProperties from './pages/AgentProperties';
-
+import Wallets from './pages/Wallet';
+import Checkout from './pages/Checkout';
 
 function App() {
   return (
@@ -38,7 +39,7 @@ function App() {
             <Route path="/rent" element={<Rent />} />
             <Route path="/lease" element={<Lease />} />
             <Route path="/shortlets" element={<Shortlets />} />
-            <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/property/:slug" element={<PropertyDetails />} />
             <Route path="/list-property" element={<ProtectedRoute requireAgent={true}><ListProperties /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
@@ -50,10 +51,14 @@ function App() {
             <Route path="/event-halls" element={<EventHalls />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path='/agent-dashboard' element={<AgentDashboard />} />
-            <Route path="/all-properties" element={<AllProperties />} />
+            <Route path="/all-properties" element={<Properties />} />
+            <Route path="/properties" element={<Properties />} />
            <Route path='/logout' element={<Logout />} />
            <Route path="/verify-email" element={<VerifyEmail />} />
            <Route path="/agent/properties" element={<AgentProperties />} />
+           <Route path="/wallet" element={<Wallets />} />
+           <Route path="/checkout/:slug" element={<Checkout />} />
+           <Route path="/properties/detail/:slug" element={<PropertyDetails />} />
           </Routes>
         </main>
         <Footer />

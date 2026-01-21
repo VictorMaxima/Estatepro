@@ -1,22 +1,21 @@
 // src/pages/PropertyDetails.jsx
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { useParams, Link } from 'react-router-dom';
+import API_URL from '@/config/api'; 
 
 function PropertyDetails() {
-  const { id } = useParams();
+  const { slug } = useParams(); // Use slug from URL
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await fetch(`${API_URL}property/${id}`, {
+        const response = await fetch(`${API_URL}properties/detail/${slug}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
+            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`, // Optional
           },
         });
 
@@ -28,14 +27,14 @@ function PropertyDetails() {
 
         setProperty(data);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Failed to load property details');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -50,11 +49,13 @@ function PropertyDetails() {
 
   if (error || !property) {
     return (
-      <div className="min-h-screen bg-bg-soft flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
+        <div className="text-center bg-white rounded-2xl shadow-card p-12 max-w-md">
           <h1 className="text-5xl font-bold text-text-primary mb-4">Property Not Found</h1>
-          <p className="text-xl text-text-muted mb-8">{error || 'Invalid property ID'}</p>
-          <Link to="/" className="text-primary text-lg hover:underline">← Back to Home</Link>
+          <p className="text-xl text-text-muted mb-8">{error || 'Invalid property slug'}</p>
+          <Link to="/properties" className="text-primary text-lg hover:underline">
+            ← Back to Properties
+          </Link>
         </div>
       </div>
     );
@@ -72,7 +73,7 @@ function PropertyDetails() {
         <div className="absolute inset-0 bg-primary bg-opacity-40" />
         <div className="absolute top-4 left-4">
           <Link
-            to="/"
+            to="/properties"
             className="bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-white transition"
           >
             ← Back
@@ -86,7 +87,7 @@ function PropertyDetails() {
           {/* Left Column - Details */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-xl shadow-card p-8">
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-6">
                 <div>
                   <span className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold">
                     {property.property_type || 'Property'}
@@ -96,7 +97,7 @@ function PropertyDetails() {
                   </h1>
                   <p className="text-xl text-text-muted mt-2">{property.location}</p>
                 </div>
-                <p className="text-4xl font-bold text-primary">
+                <p className="text-4xl font-bold text-primary whitespace-nowrap">
                   ₦{parseInt(property.price || 0).toLocaleString()}
                 </p>
               </div>
@@ -140,14 +141,25 @@ function PropertyDetails() {
             </div>
           </div>
 
+          <div className="mt-12">
+            <Link
+              to={`/checkout/${slug}`}
+              className="block w-full btn-primary py-5 text-xl font-bold text-center hover:bg-primary-dark transition"
+            >
+              Proceed to Checkout
+            </Link>
+          </div>
+
           {/* Right Column - Contact Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-card p-8 sticky top-24">
               <h3 className="text-2xl font-bold text-text-primary mb-6">Contact Agent</h3>
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-20 h-20 bg-gray-200 rounded-full" /> {/* Placeholder avatar */}
+                <div className="w-20 h-20 bg-gray-200 rounded-full" /> {/* Placeholder */}
                 <div>
-                  <p className="font-semibold text-text-primary text-lg">Chinedu Okonkwo</p>
+                  <p className="font-semibold text-text-primary text-lg">
+                    {property.agent?.name || 'Chinedu Okonkwo'}
+                  </p>
                   <p className="text-text-muted">Senior Property Agent</p>
                 </div>
               </div>
@@ -159,7 +171,7 @@ function PropertyDetails() {
                   Send Message
                 </button>
                 <button className="w-full border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg">
-                  Call Agent: +234 803 000 0000
+                  Call Agent: {property.agent?.phone || '+234 803 000 0000'}
                 </button>
               </div>
             </div>
