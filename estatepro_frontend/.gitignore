@@ -23,4 +23,3 @@ node_modules
 *.sw?
 
 # Build output
-dist/
