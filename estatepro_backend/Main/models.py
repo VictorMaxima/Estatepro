@@ -45,6 +45,8 @@ class AppUser(AbstractUser):
     agent_status = models.BooleanField(default=False)
     objects = AppUserManager()
     phone_number = models.CharField(blank=True, default='')
+    referral_code = models.CharField(max_length=45, unique=True, blank=True)
+    invite_code = models.CharField(max_length=45, blank=True)
     
 
 class AgentApplication(models.Model):
@@ -64,9 +66,11 @@ class ContactRequest(models.Model):
 
 class Property(models.Model):
     TYPECHOICES = (("sale", "Sale"), ("rent", "Rent"),("lease", "Lease"), ("shortLet","ShortLet"),("land", "Land"))
+    STATUSCHOICES = (("available", "Available"), ("reserved", "Reserved"),("sold", "Sold"))
     title = models.CharField(max_length=33)
     agent = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="listings")
     description = models.TextField()
+    status = models.CharField(max_length=45, choices=STATUSCHOICES)
     location = models.CharField(max_length=50)
     price = models.IntegerField()
     property_type = models.CharField(max_length=60, choices=TYPECHOICES)
@@ -94,4 +98,6 @@ class Property(models.Model):
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="property_pictures")
+    
+
     

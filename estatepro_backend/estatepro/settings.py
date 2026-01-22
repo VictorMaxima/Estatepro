@@ -23,9 +23,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-8l!nkir^hxbiau6gwc&c1@)t=149_wru3-ba+(t9_emxy^3l&x'
+PAYSTACK_SECRET_KEY = "none_for_now"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:3000",
+]
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+]
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+]
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 AUTH_USER_MODEL = 'Main.AppUser'
@@ -50,6 +69,7 @@ INSTALLED_APPS = [
     'Main',
     'drf_yasg',
     'corsheaders',
+    'Payment'
 ]
 
 MIDDLEWARE = [
