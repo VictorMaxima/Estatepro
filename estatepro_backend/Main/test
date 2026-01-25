@@ -1,0 +1,18 @@
+import paystack
+from pprint import pprint
+
+# Set your API key based on domain (test or live mode)
+paystack.api_key = 'sk_test_f97dc96c220969c9c02b14fdfc4615da64c0dee7'
+
+email = 'victormaxchidera@gmail.com' # str | Customer's email address
+amount = 56 # int | Amount should be in kobo if currency is NGN, pesewas, if currency is GHS, and cents, if currency is ZAR
+
+# Initialize Transaction
+
+response = paystack.Transaction.initialize(
+    email,
+    amount,
+)
+
+pprint(response)
+pprint(response.data['reference'])

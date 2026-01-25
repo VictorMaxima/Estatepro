@@ -24,4 +24,4 @@ urlpatterns = [
     path('api/properties/detail/<str:slug>', PropertyDetailView.as_view(), name='property_detail')
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

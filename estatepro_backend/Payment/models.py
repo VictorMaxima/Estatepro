@@ -13,6 +13,7 @@ class Transaction(models.Model):
     STATUSCHOICES = (('pending', 'Pending'), ("success", "Success"), ("failed", "Failed"))
     status = models.CharField(max_length=40, choices=STATUSCHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+    authorization_url = models.CharField(max_length=100, blank=True)
 
 class ReferralCommision(models.Model):
     referrer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="referral_commisions")

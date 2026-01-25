@@ -18,6 +18,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import AppUser, AgentApplication, ContactRequest, Property, PropertyImage
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.apps import apps
+
+Wallet = apps.get_model("Payment", "Wallet")
 
 class UserBackend(BaseBackend):
     #user backend for authentication
@@ -177,6 +180,7 @@ class AgentApprovalView(APIView):
         agent = get_object_or_404(AppUser, id=id)
         agent.agent_status = True
         agent.save()
+        wallet = Wallet.objects.create(owner=agent, balance=0)
         return Response({
             "message": f"{agent.email} has been successfully approved to be an agent"
         })

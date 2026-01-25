@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from .models import Transaction
-from .models import Bank
+from .models import Transaction, Bank
 
-class TransactionSerializer(serializers.ModelSerializer):
-    account = serializers.PrimaryKeyRelatedField(
-        queryset=Bank.objects.all()
-    )
+class InitializeTransactionSerializer(serializers.ModelSerializer):
+    property_id = serializers.IntegerField()
+    # output only
+    authorization_url = serializers.URLField(read_only=True)
+    paystack_reference = serializers.CharField(read_only=True)
 
     class Meta:
         model = Transaction
-        fields = ["account", "amount"]
+        fields = ['property_id', 'authorization_url', 'paystack_reference']
+
