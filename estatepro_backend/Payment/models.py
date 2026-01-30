@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 
 # Create your models here.
@@ -14,6 +15,13 @@ class Transaction(models.Model):
     status = models.CharField(max_length=40, choices=STATUSCHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     authorization_url = models.CharField(max_length=100, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.status == "success":
+            self.property.status = "sold"
+            self.property.save()
+        super().save(*args, **kwargs)
+
 
 class ReferralCommision(models.Model):
     referrer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="referral_commisions")
@@ -37,6 +45,10 @@ class Bank(models.Model):
 class PayoutRequest(models.Model):
     agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payment_requests")
     amount = models.IntegerField()
-    bank = models.ForeignKey(Bank, on_delete=models.CASCADE)
+    bank_code = models.IntegerField()
+    account_number = models.IntegerField(validators=[
+            MinValueValidator(100),  # minimum value allowed
+            MaxValueValidator(9999999999)  # maximum value allowed
+        ])
     STATUSCHOICES = (('pending', 'Pending'), ("approved", "Paid"), ("approved", "Approved"), ("paid", "Paid"))
     status = models.CharField(max_length=40, choices=STATUSCHOICES)

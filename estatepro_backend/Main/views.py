@@ -132,6 +132,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     'access_token': str(access_token),
                     'refresh_token': str(refresh_token),
                     'user_id': user.id,
+                    'agentstatus': user.agent_status
                 }
             )
         return Response({'error': 'Invalid credentials'})

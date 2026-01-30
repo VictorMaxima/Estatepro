@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Transaction, Bank
+from .models import Transaction, Bank, PayoutRequest
 
 class InitializeTransactionSerializer(serializers.ModelSerializer):
     property_id = serializers.IntegerField()
@@ -11,3 +11,12 @@ class InitializeTransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = ['property_id', 'authorization_url', 'paystack_reference']
 
+class BankListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bank
+        fields = ['name','code']
+
+class PayoutRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayoutRequest
+        fields = ['amount', 'bank_code', 'account_number']
