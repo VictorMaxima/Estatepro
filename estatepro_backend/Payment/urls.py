@@ -10,3 +10,4 @@ urlpatterns = [
     path('api/list_banks', BankListView.as_view(), name="list_banks" ),
     path('api/agent/payout_request', PayoutRequestView.as_view(), name='payment_request' )
 ]
+
