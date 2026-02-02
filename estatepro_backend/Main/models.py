@@ -71,16 +71,25 @@ class Property(models.Model):
     title = models.CharField(max_length=33)
     agent = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="listings")
     description = models.TextField()
-    status = models.CharField(max_length=44, choices=STATUSCHOICES)
+    status = models.CharField(max_length=44, choices=STATUSCHOICES, default="available")
     location = models.CharField(max_length=50)
     price = models.IntegerField(validators=[
             MinValueValidator(100),  # minimum value allowed
-            MaxValueValidator(1000000)  # maximum value allowed
+            MaxValueValidator(1000000000)  # maximum value allowed
         ])
     property_type = models.CharField(max_length=60, choices=TYPECHOICES)
-    size = models.IntegerField()
-    no_of_bedrooms = models.IntegerField()
-    no_of_bathrooms = models.IntegerField()
+    size = models.IntegerField(validators=[
+            MinValueValidator(100),  # minimum value allowed
+            MaxValueValidator(1000000000)  # maximum value allowed
+        ])
+    no_of_bedrooms = models.IntegerField(validators=[
+            MinValueValidator(1),  # minimum value allowed
+            MaxValueValidator(1000)  # maximum value allowed
+        ])
+    no_of_bathrooms = models.IntegerField(validators=[
+            MinValueValidator(1),  # minimum value allowed
+            MaxValueValidator(1000)  # maximum value allowed
+        ])
     swimming_pool = models.BooleanField(default=False)
     parking = models.BooleanField(default=False)
     air_conditioning = models.BooleanField(default=False)

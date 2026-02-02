@@ -8,9 +8,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status, viewsets, permissions
-from .serializers import InitializeTransactionSerializer
+from .serializers import (InitializeTransactionSerializer, BankListSerializer, PayoutRequestSerializer)
 import paystack
-from .models import Transaction, Wallet 
+from .models import (Transaction, Wallet, Bank) 
 from pprint import pprint
 from django.apps import apps
 import hmac
@@ -28,6 +28,10 @@ class TransactionCreateView(CreateAPIView):
         buyer = self.request.user
         data = serializer.validated_data
         property = get_object_or_404(Property, id = data['property_id'])
+        if property.status != "Available":
+            raise ValidationError("this property is not available")
+        property.status = "reserved"
+        property.save()
         response = paystack.Transaction.initialize(
         buyer.email, property.price*100       
         )
@@ -68,11 +72,11 @@ class PaystackWebhookView(APIView):
                 tx.status = "success"
                 tx.save()
 
-                # Optional: credit wallet
+                # credit wallet
                 agent = tx.property.agent
                 if agent:
                     wallet = Wallet.objects.get(owner=agent)
-                    wallet.balance += amount
+                    wallet.balance += amount*0.3
                     wallet.save()
             except Transaction.DoesNotExist:
                 # maybe log an error
@@ -80,3 +84,27 @@ class PaystackWebhookView(APIView):
 
         # 4️⃣ Return 200 OK (Paystack expects 200)
         return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+class BankListView(APIView):
+    authentication_classes = []  
+    permission_classes = []  
+
+    def get(self, request):
+        banks = Bank.objects.all()
+        serializer = BankListSerializer(banks, many=True)
+        return Response(serializer.data)
+
+class PayoutRequestView(CreateAPIView):
+    serializer_class = PayoutRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def perform_create(self, serializer):
+        agent = self.request.user
+        data = serializer.validated_data
+        if agent.wallet.balance < data['amount']:
+            raise ValidationError("Not enough balance in wallet")
+        if data['amount'] < 5000:
+            raise ValidationError("Less than the minimum withdrawable amount")
+        serializer.save(agent = agent,amount = data['amount'], bank_code = data['bank_code'], account_number = data['account_number'], status= "pending")
+
