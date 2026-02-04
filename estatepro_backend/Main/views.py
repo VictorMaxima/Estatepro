@@ -21,6 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.apps import apps
 
 Wallet = apps.get_model("Payment", "Wallet")
+Transaction = apps.get_model("Payment", "Transaction")
 
 class UserBackend(BaseBackend):
     #user backend for authentication
@@ -243,9 +244,16 @@ class ListPropertiesView(APIView):
 
 class PropertyDetailView(APIView):
     serializer = PropertyDetailSerializer
+    authentication_classes = [JWTAuthentication]
     def get(self, request, slug):
         property = get_object_or_404(Property, slug=slug)
         serializer = PropertyDetailSerializer(property)
+        if request.user.is_authenticated and Transaction.objects.filter(property=property, buyer=request.user).exists():
+            transaction = get_object_or_404(Transaction, buyer=request.user, property=property)
+            data = serializer.data
+            data['transaction'] = transaction.summary()
+            print(data['transaction'])
+            return Response(data)
         return Response(serializer.data)
     
 

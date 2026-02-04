@@ -28,6 +28,8 @@ class TransactionCreateView(CreateAPIView):
         buyer = self.request.user
         data = serializer.validated_data
         property = get_object_or_404(Property, id = data['property_id'])
+        if Transaction.objects.filter(property=property, buyer=buyer).exists():
+            raise ValidationError("This buyer has already created a transaction with this property")
         if property.status != "Available":
             raise ValidationError("this property is not available")
         property.status = "reserved"

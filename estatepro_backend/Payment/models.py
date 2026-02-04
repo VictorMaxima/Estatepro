@@ -21,6 +21,12 @@ class Transaction(models.Model):
             self.property.status = "sold"
             self.property.save()
         super().save(*args, **kwargs)
+    
+    def summary(self):
+        return {'paystack_reference': self.paystack_reference,
+                'status': self.status,
+                'authorization_url': self.authorization_url,
+                'created_at': self.created_at}
 
 
 class ReferralCommision(models.Model):
