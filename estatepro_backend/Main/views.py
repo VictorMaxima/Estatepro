@@ -46,12 +46,12 @@ class LoginView(APIView):
     #login view to be used as api end point
     @swagger_auto_schema(
         request_body=LoginSerializer,
-        responses={
+        responses= {
             200: openapi.Response(
                 description="Success",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={
+                    properties= {
                         'message': openapi.Schema(type=openapi.TYPE_STRING)
                     }
                 )
@@ -79,12 +79,12 @@ class RegisterView(APIView):
 
     @swagger_auto_schema(
         request_body = RegisterSerializer,
-        responses={
+        responses= {
             200: openapi.Response(
                 description="Success",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={
+                    properties= {
                         'message': openapi.Schema(type=openapi.TYPE_STRING)
                     }
                 )
