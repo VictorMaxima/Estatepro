@@ -132,4 +132,4 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
         model = Property
         fields = ['agent','title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
-                  'images']
+                  'images', 'status']
