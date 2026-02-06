@@ -23,6 +23,13 @@ from django.apps import apps
 Wallet = apps.get_model("Payment", "Wallet")
 Transaction = apps.get_model("Payment", "Transaction")
 
+class OptionalJWTAuthentication(JWTAuthentication):
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except:
+            return None 
+
 class UserBackend(BaseBackend):
     #user backend for authentication
 
@@ -237,6 +244,7 @@ class ListAgentPropertiesView(APIView):
 
 class ListPropertiesView(APIView):
     serializer = ListPropertySerializer
+    permission_classes = [permissions.AllowAny]
     def get(self, request):
         properties = Property.objects.all()
         serializer = ListPropertySerializer(properties, many=True)
@@ -244,7 +252,8 @@ class ListPropertiesView(APIView):
 
 class PropertyDetailView(APIView):
     serializer = PropertyDetailSerializer
-    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [OptionalJWTAuthentication]
     def get(self, request, slug):
         property = get_object_or_404(Property, slug=slug)
         serializer = PropertyDetailSerializer(property)
