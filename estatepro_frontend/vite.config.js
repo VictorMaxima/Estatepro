@@ -5,37 +5,33 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  base: '/', // Good - works for most hosting (Netlify, Vercel, GitHub Pages)
+  base: '/', 
 
   plugins: [react(), tailwindcss()],
 
-  // Path aliases - @ points to src/ (this is what fixed your import issues)
+  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // Optional: Add more aliases later if project grows
-      // '@components': path.resolve(__dirname, './src/components'),
-      // '@pages': path.resolve(__dirname, './src/pages'),
-      // '@assets': path.resolve(__dirname, './src/assets'),
+      
     },
   },
 
-  // Dev server settings - very useful for local development
   server: {
     port: 5173,
-    open: true,           // Auto-open browser when you run npm run dev
-    host: true,           // Allows testing from phone/other devices on same Wi-Fi
-    strictPort: true,     // If port 5173 is taken, fail instead of auto-changing
+    open: true,           
+    host: true,           
+    strictPort: true,     
   },
 
-  // Production build optimizations (optional but recommended)
+  
   build: {
-    outDir: 'dist',       // Default, but good to be explicit
-    sourcemap: true,      // Makes production debugging much easier (stack traces work)
-    minify: 'esbuild',    // Fast minification (default is good)
+    outDir: 'dist',       
+    sourcemap: true,      
+    minify: 'esbuild',    
   },
 
-  // Optional: Better error reporting in development
+  
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },

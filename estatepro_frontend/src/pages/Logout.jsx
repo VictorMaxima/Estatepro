@@ -7,7 +7,7 @@ import API_URL from '@/config/api';
 function Logout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { logout } = useAuth(); // Your auth context method
+  const { logout } = useAuth(); 
   const navigate = useNavigate();
 
   const token = localStorage.getItem('accessToken');
@@ -15,7 +15,7 @@ function Logout() {
   useEffect(() => {
     const performLogout = async () => {
       if (!token) {
-        // No token → just clear local state and redirect
+        
         logout();
         setLoading(false);
         navigate('/login');
@@ -26,7 +26,7 @@ function Logout() {
       setError('');
 
       try {
-        // Call backend logout endpoint
+        
         const response = await fetch(`${API_URL}logout/`, {
           method: 'POST',
           headers: {
@@ -40,11 +40,11 @@ function Logout() {
           throw new Error(data.detail || data.message || 'Logout failed on server');
         }
 
-        // Success: Clear tokens and auth state
+        
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
 
-        logout(); // Update context
+        logout(); 
 
         setLoading(false);
         navigate('/login');
@@ -53,7 +53,7 @@ function Logout() {
         console.error('Logout error:', err);
         setError(err.message || 'An error occurred during logout');
 
-        // Fallback: Force clear local data even if backend fails
+        
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         logout();

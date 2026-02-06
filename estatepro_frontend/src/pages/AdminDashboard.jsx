@@ -11,14 +11,14 @@ function AdminDashboard() {
 
   const token = localStorage.getItem('accessToken');
 
-  // Redirect if not logged in
+  
   useEffect(() => {
     if (!token) {
       navigate('/login');
     }
   }, [token, navigate]);
 
-  // Fetch all agent applications
+  
   useEffect(() => {
     const fetchApplications = async () => {
       if (!token) return;
@@ -41,7 +41,7 @@ function AdminDashboard() {
           throw new Error(data.detail || data.message || 'Failed to load applications');
         }
 
-        setApplications(data); // Expecting array of applications
+        setApplications(data); 
       } catch (err) {
         setError(err.message || 'Could not load agent applications');
       } finally {
@@ -52,18 +52,18 @@ function AdminDashboard() {
     fetchApplications();
   }, [token]);
 
-  // Approve an application
+  
   const handleApprove = async (appId) => {
     if (!confirm('Are you sure you want to approve this agent?')) return;
 
     try {
       const response = await fetch(`${API_URL}approve_application/${appId}/`, {
-        method: 'POST', // Change to 'PUT' if backend uses PUT
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'approved' }), // Adjust body if different
+        body: JSON.stringify({ status: 'approved' }), 
       });
 
       if (!response.ok) {
@@ -71,7 +71,7 @@ function AdminDashboard() {
         throw new Error(errData.detail || 'Failed to approve application');
       }
 
-      // Update UI immediately
+    
       setApplications(prev =>
         prev.map(app =>
           app.id === appId ? { ...app, status: 'approved' } : app
@@ -84,7 +84,7 @@ function AdminDashboard() {
     }
   };
 
-  // Reject an application (optional - add if backend supports reject)
+  
   const handleReject = async (appId) => {
     if (!confirm('Are you sure you want to reject this agent?')) return;
 

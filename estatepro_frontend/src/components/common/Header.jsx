@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user } = useAuth(); // Get current user
+  const { user } = useAuth(); 
 
   const closeMenu = () => setMobileMenuOpen(false);
 
@@ -79,8 +79,8 @@ function Header() {
                 Logout
               </Link>
 
-              {/* Only show "List Your Property" if user is an approved agent */}
-              {user && user.agentStatus === 'approved' && (
+              
+              {user && user.isAgent === 'approved' && (
                 <Link
                   to="/list-property"
                   className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
@@ -189,8 +189,8 @@ function Header() {
                   Become An Agent
                 </Link>
 
-                {/* Only show for approved agents in mobile too */}
-                {user && user.agentStatus === 'approved' && (
+                
+                {user && user.isAgent === 'approved' && (
                   <Link
                     to="/list-property"
                     onClick={closeMenu}

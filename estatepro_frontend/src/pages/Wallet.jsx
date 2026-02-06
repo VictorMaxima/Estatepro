@@ -1,12 +1,12 @@
 // src/pages/Wallet.jsx
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext'; // optional — for user email/name
-import API_URL from '@/config/api'; // your API config
+import { useAuth } from '../context/AuthContext'; 
+import API_URL from '@/config/api'; 
 
 function Wallet() {
-  const { user } = useAuth(); // optional
+  const { user } = useAuth(); 
   const [balance, setBalance] = useState(0);
-  const [payouts, setPayouts] = useState([]); // placeholder history
+  const [payouts, setPayouts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -18,19 +18,11 @@ function Wallet() {
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
-  // Fetch wallet data (replace with real API when backend is ready)
+  
   useEffect(() => {
     const fetchWalletData = async () => {
       try {
-        // Placeholder — replace with real fetch
-        // const response = await fetch(`${API_URL}api/wallet`, {
-        //   headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
-        // });
-        // const data = await response.json();
-        // setBalance(data.balance);
-        // setPayouts(data.payouts || []);
-
-        // Dummy data for development
+        
         setBalance(45000);
         setPayouts([
           { id: 1, date: '2026-01-01', amount: 12000, status: 'Paid' },
@@ -73,18 +65,7 @@ function Wallet() {
     setWithdrawLoading(true);
 
     try {
-      // Replace with real API call when backend is ready
-      // const response = await fetch(`${API_URL}api/withdraw`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
-      // if (!response.ok) throw new Error('Withdrawal failed');
-
-      // Simulate success for now
+      
       setBalance(prev => prev - Number(formData.amount));
       setPayouts([
         {

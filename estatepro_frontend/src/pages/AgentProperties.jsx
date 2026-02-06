@@ -11,14 +11,12 @@ function AgentProperties() {
 
   const token = localStorage.getItem('accessToken');
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!token) {
       navigate('/login');
     }
   }, [token, navigate]);
 
-  // Fetch agent's properties
   useEffect(() => {
     const fetchProperties = async () => {
       if (!token) return;
@@ -41,7 +39,7 @@ function AgentProperties() {
           throw new Error(data.detail || data.message || 'Failed to load your properties');
         }
 
-        setProperties(data); // Backend should return array of properties
+        setProperties(data); 
       } catch (err) {
         setError(err.message || 'Could not load your properties');
       } finally {
@@ -96,7 +94,6 @@ function AgentProperties() {
                 key={property.id}
                 className="bg-white rounded-2xl shadow-card overflow-hidden hover:shadow-xl transition-shadow"
               >
-                {/* Main Image */}
                 <div className="h-48 bg-gray-200 relative">
                   {property.images?.[0] ? (
                     <img

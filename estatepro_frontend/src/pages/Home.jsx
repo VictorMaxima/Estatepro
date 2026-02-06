@@ -46,11 +46,11 @@ function Home() {
     <>
       {/* ================= HERO ================= */}
       <section className="relative bg-primary min-h-[50vh] md:min-h-screen flex flex-col justify-center md:justify-end pb-12 md:pb-24 overflow-hidden">
-        {/* Solid background (no image) */}
+        
         <div className="absolute inset-0 bg-primary" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 w-full">
-          {/* Hero Text */}
+          
           <div className="text-center text-white mb-8 md:mb-12">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-tight">
               Leisure at its<br />Peak
@@ -281,7 +281,7 @@ function Home() {
         />
         <img
           src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
-          alt="Beach getaway villa"
+          alt="Beach getaway villa"s
           className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 mt-12 lg:mt-0"
         />
         <img
@@ -357,7 +357,7 @@ function Home() {
             </div>
             <div className="order-1 lg:order-2">
               <h2 className="text-4xl md:text-5xl font-extrabold text-text-primary mb-6">
-                Pay Small Small own a Land Today!
+                Own a Land Today!
               </h2>
               <p className="text-xl text-text-muted mb-8">
                 We offer genuine plots at discounted prices, making land ownership easier and more affordable for everyone.

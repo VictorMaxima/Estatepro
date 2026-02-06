@@ -5,9 +5,12 @@ import API_URL from '@/config/api';
 
 function Properties() {
   const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Fetch all properties once
   useEffect(() => {
     const fetchProperties = async () => {
       try {
@@ -19,6 +22,7 @@ function Properties() {
         }
 
         setProperties(data);
+        setFilteredProperties(data); // initial full list
       } catch (err) {
         setError(err.message || 'Could not load properties. Please try again.');
       } finally {
@@ -28,6 +32,23 @@ function Properties() {
 
     fetchProperties();
   }, []);
+
+  // Filter locally whenever search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredProperties(properties);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = properties.filter((prop) =>
+      prop.title?.toLowerCase().includes(term) ||
+      prop.location?.toLowerCase().includes(term) ||
+      prop.property_type?.toLowerCase().includes(term)
+    );
+
+    setFilteredProperties(filtered);
+  }, [searchTerm, properties]);
 
   if (loading) {
     return (
@@ -60,19 +81,34 @@ function Properties() {
   return (
     <div className="min-h-screen bg-bg-soft py-20">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-5xl font-bold text-text-primary text-center mb-12">
+        <h1 className="text-5xl font-bold text-text-primary text-center mb-8">
           All Properties
         </h1>
 
-        {properties.length === 0 ? (
-          <p className="text-center text-2xl text-text-muted">No properties found</p>
+        {/* Search Input */}
+        <div className="mb-12 max-w-xl mx-auto">
+          <input
+            type="text"
+            placeholder="Search by title, location, or type..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-6 py-5 border border-border-light rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-lg"
+          />
+        </div>
+
+        {filteredProperties.length === 0 ? (
+          <p className="text-center text-2xl text-text-muted">
+            {searchTerm.trim() 
+              ? 'No properties match your search' 
+              : 'No properties found'}
+          </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {properties.map((property) => (
+            {filteredProperties.map((property) => (
               <PropertyCard
-                key={property.id || property.slug || `prop-${Math.random().toString(36).slice(2)}`}
+                key={property.slug || property.id || `prop-${Math.random().toString(36).slice(2)}`}
                 property={property}
-                linkTo={`/properties/detail/${property.slug}`} // ← Links to detail using slug
+                linkTo={`/properties/detail/${property.slug || property.id}`}
               />
             ))}
           </div>

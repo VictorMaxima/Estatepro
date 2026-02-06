@@ -14,3 +14,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+if (import.meta.env.DEV) {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('non-boolean attribute `s`')
+    ) return;
+    originalError(...args);
+  };
+}

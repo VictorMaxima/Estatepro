@@ -21,8 +21,8 @@ function ListProperty() {
     amenities: [],
   });
 
-  const [photos, setPhotos] = useState([]); // Array of File objects
-  const [photoPreviews, setPhotoPreviews] = useState([]); // Base64 previews
+  const [photos, setPhotos] = useState([]); 
+  const [photoPreviews, setPhotoPreviews] = useState([]); 
 
   const amenitiesOptions = [
     'Swimming Pool', 'Gym', '24/7 Security', 'Parking', 'Garden', 'Balcony',
@@ -32,7 +32,7 @@ function ListProperty() {
   const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
-  // Redirect if not logged in
+  
   if (!token) {
     return (
       <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
@@ -100,7 +100,7 @@ function ListProperty() {
     setSuccess(false);
 
     try {
-      // Step 1: Create the property listing
+      
       const propertyResponse = await fetch(`${API_URL}agent/properties/add`, {
         method: 'POST',
         headers: {
@@ -126,14 +126,13 @@ function ListProperty() {
         throw new Error(propertyData.detail || propertyData.message || 'Failed to create property');
       }
 
-      const propertyId = propertyData.id; // Backend MUST return the new property ID
-
-      // Step 2: Upload each photo using the correct endpoint
+      const propertyId = propertyData.id; 
+      
       for (const photo of photos) {
         const photoFormData = new FormData();
-        photoFormData.append('image', photo); // Field name: 'image' — confirm with backend if different
+        photoFormData.append('image', photo); 
 
-        const imageResponse = await fetch(`${API_URL}api/property/${propertyId}/add_image`, {
+        const imageResponse = await fetch(`${API_URL}property/${propertyId}/add_image`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -11,7 +11,7 @@ function VerifyEmail() {
 
   useEffect(() => {
     const verify = async () => {
-      // Get token from URL query (e.g. /verify-email?token=abc123)
+      
       const params = new URLSearchParams(location.search);
       const token = params.get('token');
 

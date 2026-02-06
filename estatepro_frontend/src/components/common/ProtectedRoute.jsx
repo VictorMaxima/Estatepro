@@ -8,7 +8,7 @@ function ProtectedRoute({ children, requireAgent = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAgent && user.agentStatus !== 'approved') {
+  if (requireAgent && user.isAgent !== 'approved') {
     return <Navigate to="/" replace />;
   }
 

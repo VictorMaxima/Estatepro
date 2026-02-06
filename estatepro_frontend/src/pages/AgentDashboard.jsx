@@ -14,14 +14,12 @@ function AgentDashboard() {
 
   const token = localStorage.getItem('accessToken');
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!token) {
       navigate('/login');
     }
   }, [token, navigate]);
 
-  // Fetch property stats
   useEffect(() => {
     const fetchStats = async () => {
       if (!token) return;
@@ -46,19 +44,10 @@ function AgentDashboard() {
     fetchStats();
   }, [token]);
 
-  // Fetch wallet data (dummy for now – replace with real API later)
   useEffect(() => {
     const fetchWallet = async () => {
       try {
-        // TODO: Replace with real endpoint when backend is ready
-        // const response = await fetch(`${API_URL}api/wallet`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
-        // const data = await response.json();
-        // setWalletBalance(data.balance);
-        // setPayouts(data.payouts || []);
-
-        // Dummy data
+        
         setWalletBalance(45250);
         setPayouts([
           { id: 1, date: '2026-01-01', amount: 12500, status: 'Paid' },
@@ -75,7 +64,6 @@ function AgentDashboard() {
     fetchWallet();
   }, [token]);
 
-  // Withdrawal form state
   const [formData, setFormData] = useState({
     bankName: '',
     accountNumber: '',
@@ -112,10 +100,7 @@ function AgentDashboard() {
     setWithdrawLoading(true);
 
     try {
-      // TODO: Real API call when backend is ready
-      // await fetch(`${API_URL}api/withdraw`, { ... });
-
-      // Simulate success
+      
       setWalletBalance(prev => prev - Number(formData.amount));
       setPayouts([
         {

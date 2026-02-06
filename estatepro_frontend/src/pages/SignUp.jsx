@@ -46,14 +46,14 @@ function Signup() {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
-          // role: 'user' → Django likely handles default role, only add if required
+          
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Show backend error message if available
+        
         throw new Error(data.detail || data.message || 'Signup failed. Please try again.');
       }
 

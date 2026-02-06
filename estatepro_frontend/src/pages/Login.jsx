@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +17,7 @@ function Login() {
     setError('');
     setLoading(true);
 
+    // Basic client-side validation
     if (!email.trim()) {
       setError('Please enter your email');
       setLoading(false);
@@ -46,16 +48,22 @@ function Login() {
         throw new Error(data.detail || data.message || 'Login failed');
       }
 
-      // Success: Store real JWT tokens
-      const { access, refresh } = data;
-      localStorage.setItem('accessToken', access);
-      localStorage.setItem('refreshToken', refresh);
+      // Store tokens securely
+      localStorage.setItem('accessToken', data.access);
+      if (data.refresh) {
+        localStorage.setItem('refreshToken', data.refresh);
+      }
 
-      // Update auth context (you may fetch user profile later)
-      login({ email: email.trim() });
+      // Update auth context (extracts id + is_agent)
+      login(data);
 
-      // Redirect to home (or change to dashboard later)
-      navigate('/');
+      // Redirect logic based on is_agent from backend
+      // inside handleSubmit after login(data)
+        if (data.is_agent === true) {           // ← changed here
+          navigate('/agent-dashboard');
+        } else {
+          navigate('/');
+        }
 
     } catch (err) {
       setError(err.message || 'An error occurred during login');

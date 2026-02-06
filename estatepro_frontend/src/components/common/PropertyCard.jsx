@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 
 function PropertyCard({ property, linkTo }) {
-  // Fallbacks
+  // Safe fallbacks for all fields
   const imageUrl = property.image || property.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image';
   const title = property.title || 'Untitled Property';
   const price = property.price ? `₦${parseInt(property.price).toLocaleString()}` : 'Price on Request';
@@ -12,13 +12,16 @@ function PropertyCard({ property, linkTo }) {
   const baths = property.baths || property.bathrooms || '-';
   const sqft = property.sqft || property.size || '-';
 
+  // Slug fallback for link
+  const slug = property.slug || property.id || 'unknown';
+
   return (
     <Link
-      to={linkTo || `/properties/detail/${property.slug || property.id || 'unknown'}`}
-      className="block h-full group"
+      to={linkTo || `/properties/detail/${slug}`}
+      className="block h-full group no-underline"
     >
       <div className="bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden h-full flex flex-col">
-        {/* Image */}
+        {/* Image Section */}
         <div className="relative overflow-hidden">
           <img
             src={imageUrl}
@@ -47,7 +50,7 @@ function PropertyCard({ property, linkTo }) {
             <span>{sqft} sqft</span>
           </div>
 
-          {/* No inner Link - the whole card is clickable */}
+          {/* View Details Button */}
           <div className="mt-auto">
             <span className="block text-center py-3 bg-primary text-white rounded-lg font-semibold group-hover:bg-primary-dark transition">
               View Details →

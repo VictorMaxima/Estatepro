@@ -2,7 +2,7 @@ import PropertyCard from '../components/common/PropertyCard';
 import properties from '../data/DummyProperties.json';
 
 function Land() {
-  // Strict filter: only properties explicitly marked as land
+  
   const landProperties = properties.filter(property => 
     property.type === 'Land' || 
     property.type.toLowerCase() === 'land' ||
@@ -19,9 +19,9 @@ function Land() {
           Secure prime residential, commercial, and agricultural plots across the country
         </p>
 
-        {/* Filters + Grid */}
+        
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
+          
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-card p-6 sticky top-24">
               <h3 className="text-xl font-bold text-text-primary mb-6">Filters</h3>
@@ -62,7 +62,7 @@ function Land() {
             </div>
           </div>
 
-          {/* Land Listings Grid */}
+          
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-8">
               <p className="text-text-muted">

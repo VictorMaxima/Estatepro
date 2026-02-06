@@ -15,9 +15,9 @@ function Buy() {
           Find your dream home to own — luxury apartments, houses, and land
         </p>
 
-        {/* Filters Sidebar + Grid */}
+        
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
+          
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-card p-6 sticky top-24">
               <h3 className="text-xl font-bold text-text-primary mb-6">Filters</h3>
@@ -52,7 +52,7 @@ function Buy() {
             </div>
           </div>
 
-          {/* Properties Grid */}
+          
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-8">
               <p className="text-text-muted">{buyProperties.length} properties found</p>

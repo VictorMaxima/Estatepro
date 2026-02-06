@@ -38,8 +38,8 @@ function LoginModal({ isOpen, onClose, onSuccess }) {
 
       const userInfo = login(data);
 
-      // Redirect based on agent_status
-      if (userInfo.agentStatus) {
+      // Redirect based on is_agent
+      if (userInfo.isAgent) {
         navigate('/agent-dashboard');
       } else {
         navigate('/');

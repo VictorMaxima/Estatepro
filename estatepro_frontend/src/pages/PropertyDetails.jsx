@@ -1,10 +1,10 @@
 // src/pages/PropertyDetails.jsx
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import API_URL from '@/config/api'; 
+import API_URL from '@/config/api';
 
 function PropertyDetails() {
-  const { slug } = useParams(); // Use slug from URL
+  const { slug } = useParams();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,10 +12,11 @@ function PropertyDetails() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await fetch(`${API_URL}properties/detail/${slug}`, {
+        const response = await fetch(`${API_URL}properties/detail/${property.slug}`, {
+          
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`, // Optional
+            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
           },
         });
 
@@ -127,52 +128,74 @@ function PropertyDetails() {
               <div className="mt-8">
                 <h2 className="text-2xl font-bold text-text-primary mb-4">Amenities</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {(property.amenities || []).map((amenity) => (
-                    <div key={amenity} className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-sm">✓</div>
-                      <span className="text-text-muted">{amenity}</span>
-                    </div>
-                  ))}
-                  {(!property.amenities || property.amenities.length === 0) && (
+                  {property.amenities && Object.keys(property.amenities).length > 0 ? (
+                    Object.entries(property.amenities).map(([amenity, isAvailable]) =>
+                      isAvailable ? (
+                        <div key={amenity} className="flex items-center gap-3">
+                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                          <span className="text-text-muted">{amenity}</span>
+                        </div>
+                      ) : null
+                    )
+                  ) : (
                     <p className="text-text-muted">No amenities listed</p>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-12">
-            <Link
-              to={`/checkout/${slug}`}
-              className="block w-full btn-primary py-5 text-xl font-bold text-center hover:bg-primary-dark transition"
-            >
-              Proceed to Checkout
-            </Link>
+              {/* Proceed to Checkout Button */}
+              <div className="mt-12">
+                <Link
+                  to={`/checkout/${slug}`}
+                  className="block w-full btn-primary py-5 text-xl font-bold text-center hover:bg-primary-dark transition"
+                >
+                  Proceed to Checkout
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Right Column - Contact Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-card p-8 sticky top-24">
               <h3 className="text-2xl font-bold text-text-primary mb-6">Contact Agent</h3>
+
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-20 h-20 bg-gray-200 rounded-full" /> {/* Placeholder */}
+                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-3xl">
+                  👤
+                </div>
                 <div>
-                  <p className="font-semibold text-text-primary text-lg">
-                    {property.agent?.name || 'Chinedu Okonkwo'}
+                  <p className="font-semibold text-text-primary text-xl">
+                    {property.agent?.name || 'Agent Name'}
                   </p>
-                  <p className="text-text-muted">Senior Property Agent</p>
+                  <p className="text-text-muted text-sm">
+                    {property.agent?.email || 'agent@example.com'}
+                  </p>
                 </div>
               </div>
+
               <div className="space-y-4">
                 <button className="w-full btn-primary py-4 text-lg">
                   Schedule Viewing
                 </button>
+
                 <button className="w-full border-2 border-primary text-primary font-bold py-4 rounded-xl hover:bg-primary hover:text-white transition text-lg">
                   Send Message
                 </button>
-                <button className="w-full border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg">
-                  Call Agent: {property.agent?.phone || '+234 803 000 0000'}
-                </button>
+
+                <a
+                  href={`tel:${property.agent?.phone}`}
+                  className="w-full block border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg text-center"
+                >
+                  Call: {property.agent?.phone || '+234 803 000 0000'}
+                </a>
+
+                <a
+                  href={`mailto:${property.agent?.email}`}
+                  className="w-full block border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg text-center mt-2"
+                >
+                  Email Agent
+                </a>
               </div>
             </div>
           </div>
