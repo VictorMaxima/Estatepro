@@ -20,29 +20,34 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (loginData) => {
-  const userInfo = {
-    id: loginData.user_id,
-    email: loginData.email || '',
-    isAgent: !!loginData.is_agent,   // ← changed here
+    const userInfo = {
+      id: loginData.user_id,
+      email: loginData.email || '',
+      name: loginData.name || loginData.full_name || '',           // ← added support for name
+      profilePic: loginData.profile_pic || loginData.avatar || '', // ← added support for profile picture URL
+      isAgent: !!loginData.is_agent,
+    };
+
+    localStorage.setItem('homemuUser', JSON.stringify(userInfo));
+    setUser(userInfo);
+
+    return userInfo;
   };
-
-  localStorage.setItem('homemuUser', JSON.stringify(userInfo));
-  setUser(userInfo);
-
-  return userInfo;
-};
-
 
   const signup = (signupData) => {
     // Signup typically creates a normal user (is_agent = false)
     const newUser = {
       id: signupData.user_id || null,
       email: signupData.email || '',
+      name: signupData.name || signupData.full_name || '',           // ← added
+      profilePic: signupData.profile_pic || signupData.avatar || '', // ← added
       isAgent: false,
     };
 
     localStorage.setItem('homemuUser', JSON.stringify(newUser));
     setUser(newUser);
+
+    return newUser;
   };
 
   const updateUser = (updatedFields) => {
@@ -60,14 +65,14 @@ export function AuthProvider({ children }) {
   };
 
   const value = {
-  user,
-  isAuthenticated: !!user,
-  isAgent: !!user?.isAgent,   // ← changed here
-  login,
-  signup,
-  updateUser,
-  logout,
-};
+    user,
+    isAuthenticated: !!user,
+    isAgent: !!user?.isAgent,
+    login,
+    signup,
+    updateUser,
+    logout,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ProfileDropdown from '../ProfileDropdown';
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -54,19 +55,25 @@ function Header() {
 
             {/* Auth & CTA */}
             <div className="flex items-center gap-10">
-              <Link
-                to="/login"
-                className="px-6 text-white hover:text-accent font-medium transition border-r border-white/30"
-              >
-                Login
-              </Link>
+              {user ? (
+                <ProfileDropdown />
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-6 text-white hover:text-accent font-medium transition border-r border-white/30"
+                  >
+                    Login
+                  </Link>
 
-              <Link
-                to="/signup"
-                className="px-6 text-accent hover:text-white font-medium transition border-r border-white/30"
-              >
-                Sign Up
-              </Link>
+                  <Link
+                    to="/signup"
+                    className="px-6 text-accent hover:text-white font-medium transition border-r border-white/30"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
 
               <Link
                 to="/become-agent"
@@ -75,11 +82,6 @@ function Header() {
                 Become An Agent
               </Link>
 
-              <Link to="/logout" className="text-red-600 hover:text-red-800 font-medium">
-                Logout
-              </Link>
-
-              
               {user && user.isAgent === 'approved' && (
                 <Link
                   to="/list-property"
@@ -165,21 +167,29 @@ function Header() {
               </div>
 
               <div className="border-t border-border pt-6 space-y-4">
-                <Link
-                  to="/login"
-                  onClick={closeMenu}
-                  className="block text-center font-medium text-text-primary py-3"
-                >
-                  Login
-                </Link>
+                {user ? (
+                  <div className="px-4 py-3">
+                    <ProfileDropdown />
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={closeMenu}
+                      className="block text-center font-medium text-text-primary py-3"
+                    >
+                      Login
+                    </Link>
 
-                <Link
-                  to="/signup"
-                  onClick={closeMenu}
-                  className="block text-center font-medium text-primary py-3"
-                >
-                  Sign Up
-                </Link>
+                    <Link
+                      to="/signup"
+                      onClick={closeMenu}
+                      className="block text-center font-medium text-primary py-3"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
 
                 <Link
                   to="/become-agent"
@@ -189,7 +199,6 @@ function Header() {
                   Become An Agent
                 </Link>
 
-                
                 {user && user.isAgent === 'approved' && (
                   <Link
                     to="/list-property"

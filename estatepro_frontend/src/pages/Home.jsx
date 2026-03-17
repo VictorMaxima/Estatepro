@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';  // ← changed: added useEffect
 import {
   House,
   Store,
@@ -15,6 +15,7 @@ import {
   BookOpen,
   Menu,
   X,
+  LogIn,  // ← optional new import for modal icon (can remove if you prefer)
 } from 'lucide-react';
 
 import SearchBar from '../components/common/SearchBar';
@@ -41,6 +42,20 @@ function Home() {
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);  // ← NEW state
+
+  // NEW: Show login popup suggestion after ~4 seconds (only once per device/browser)
+  useEffect(() => {
+    const hasSeen = localStorage.getItem('loginPromptSeen');
+    if (!hasSeen) {
+      const timer = setTimeout(() => {
+        setShowLoginPrompt(true);
+        localStorage.setItem('loginPromptSeen', 'true');
+      }, 4000); // change to 3000 or 6000 if you want faster/slower
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <>
@@ -224,80 +239,80 @@ function Home() {
       </section>
 
       {/* ================= GET APARTMENT/SHOPS FOR RENT AND LEASE ================= */}
-<section className="py-20 bg-primary text-white">
-  <div className="max-w-7xl mx-auto px-4">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-      {/* Left: Text content */}
-      <div className="text-center lg:text-left">
-        <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
-          Get Apartment/Shops for Rent and Lease
-        </h2>
-        <p className="text-xl mb-8 opacity-90">
-          At HomeMu, Your Comfort and Security comes first. We deliver seamless real estate solutions built on Trust, Quality and Legal Assurance.
-        </p>
-        <div className="space-y-6">
-          <div className="flex gap-4 items-start justify-center lg:justify-start">
-            <BookOpen size={32} className="text-white shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-bold text-white text-left">
-                We provide well-maintained, comfortable, and conducive living spaces for leisure, rent, and long-term stays.
-              </h3>
-            </div>
-          </div>
+      <section className="py-20 bg-primary text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text content */}
+            <div className="text-center lg:text-left">
+              <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
+                Get Apartment/Shops for Rent and Lease
+              </h2>
+              <p className="text-xl mb-8 opacity-90">
+                At HomeMu, Your Comfort and Security comes first. We deliver seamless real estate solutions built on Trust, Quality and Legal Assurance.
+              </p>
+              <div className="space-y-6">
+                <div className="flex gap-4 items-start justify-center lg:justify-start">
+                  <BookOpen size={32} className="text-white shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white text-left">
+                      We provide well-maintained, comfortable, and conducive living spaces for leisure, rent, and long-term stays.
+                    </h3>
+                  </div>
+                </div>
 
-          <div className="flex gap-4 items-start justify-center lg:justify-start">
-            <BookOpen size={32} className="text-white shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-bold text-white text-left">
-                Whether you’re leasing or renting, we offer top-tier property options tailored to your lifestyle and budget.
-              </h3>
-            </div>
-          </div>
+                <div className="flex gap-4 items-start justify-center lg:justify-start">
+                  <BookOpen size={32} className="text-white shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white text-left">
+                      Whether you’re leasing or renting, we offer top-tier property options tailored to your lifestyle and budget.
+                    </h3>
+                  </div>
+                </div>
 
-          <div className="flex gap-4 items-start justify-center lg:justify-start">
-            <BookOpen size={32} className="text-white shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-bold text-white text-left">
-                Experience convenience, comfort, and legal security—all in one place. Choose HomeMu today.
-              </h3>
+                <div className="flex gap-4 items-start justify-center lg:justify-start">
+                  <BookOpen size={32} className="text-white shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white text-left">
+                      Experience convenience, comfort, and legal security—all in one place. Choose HomeMu today.
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                to="/shortlets"
+                className="inline-block mt-10 bg-white text-primary font-bold px-10 py-4 rounded-full hover:bg-gray-100 transition"
+              >
+                Explore HomeMu Services
+              </Link>
+            </div>
+
+            {/* Right: Images grid */}
+            <div className="grid grid-cols-2 gap-6">
+              <img
+                src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Modern holiday villa"
+                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80"
+              />
+              <img
+                src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Beach getaway villa"
+                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 mt-12 lg:mt-0"
+              />
+              <img
+                src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Luxury shortlet interior"
+                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
+              />
+              <img
+                src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Luxury shortlet interior"
+                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
+              />
             </div>
           </div>
         </div>
-
-        <Link
-          to="/shortlets"
-          className="inline-block mt-10 bg-white text-primary font-bold px-10 py-4 rounded-full hover:bg-gray-100 transition"
-        >
-          Explore HomeMu Services
-        </Link>
-      </div>
-
-      {/* Right: Images grid (desktop side-by-side, mobile stacked below text) */}
-      <div className="grid grid-cols-2 gap-6">
-        <img
-          src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800"
-          alt="Modern holiday villa"
-          className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80"
-        />
-        <img
-          src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
-          alt="Beach getaway villa"s
-          className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 mt-12 lg:mt-0"
-        />
-        <img
-          src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800"
-          alt="Luxury shortlet interior"
-          className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
-        />
-        <img
-          src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800"
-          alt="Luxury shortlet interior"
-          className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
-        />
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       <section className="py-20 bg-bg-soft">
         <div className="max-w-7xl mx-auto px-4">
@@ -383,6 +398,51 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ================= NEW LOGIN SUGGESTION POPUP ================= */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowLoginPrompt(false)}
+              className="absolute top-4 right-4 text-gray-600 hover:text-black"
+            >
+              <X size={28} />
+            </button>
+
+            <div className="text-center pt-4">
+              <LogIn size={48} className="mx-auto text-primary mb-4" />
+              <h3 className="text-2xl font-bold mb-3">Welcome to HomeMu</h3>
+              <p className="text-gray-600 mb-6">
+                Login or sign up to save properties, get alerts, book shortlets, and more.
+              </p>
+
+              <div className="flex flex-col gap-4">
+                <Link
+                  to="/login"
+                  className="bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90"
+                  onClick={() => setShowLoginPrompt(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="border border-primary text-primary py-3 rounded-lg font-semibold hover:bg-primary/10"
+                  onClick={() => setShowLoginPrompt(false)}
+                >
+                  Sign Up
+                </Link>
+                <button
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="text-gray-500 hover:text-gray-700 mt-2"
+                >
+                  Continue browsing
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

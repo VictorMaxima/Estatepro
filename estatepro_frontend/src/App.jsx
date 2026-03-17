@@ -35,10 +35,14 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+  if (!isAuthenticated) {
+    const timer = setTimeout(() => {
       setShowLoginModal(true);
-    }
-  }, [isAuthenticated]);
+    }, 4500); // 4.5 seconds delay – you can change to 3000, 5000, 6000 etc.
+
+    return () => clearTimeout(timer);
+  }
+}, [isAuthenticated]);
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);

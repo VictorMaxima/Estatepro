@@ -1,7 +1,7 @@
 // src/pages/Checkout.jsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import PaystackPop from '@paystack/inline-js'; // ← NEW: Official SDK
+import PaystackPop from '@paystack/inline-js';
 import API_URL from '@/config/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,7 +15,11 @@ function Checkout() {
   const [error, setError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  // Fetch property details
+  // NEW: Scam warning states
+  const [showScamWarning, setShowScamWarning] = useState(true);
+  const [hasAgreed, setHasAgreed] = useState(false);
+
+  // Fetch property details (unchanged)
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -56,7 +60,7 @@ function Checkout() {
       email: user?.email || 'buyer@example.com',
       amount: property.price * 100, // Convert to kobo
       currency: 'NGN',
-      ref: '' + Math.floor((Math.random() * 1000000000) + 1), // unique ref
+      ref: '' + Math.floor((Math.random() * 1000000000) + 1),
       firstname: user?.firstName || 'Customer',
       lastname: user?.lastName || '',
       metadata: {
@@ -69,8 +73,7 @@ function Checkout() {
         alert('Payment successful! Reference: ' + response.reference);
         setPaymentLoading(false);
         // TODO: Call backend to verify payment
-        // e.g. fetch(`${API_URL}api/verify-payment`, { method: 'POST', body: JSON.stringify({ reference: response.reference }) })
-        navigate('/payment-success'); // or show success UI
+        navigate('/payment-success');
       },
       onClose: () => {
         console.log('Payment window closed');
@@ -79,7 +82,7 @@ function Checkout() {
       },
     });
 
-    handler.openIframe(); // Opens Paystack popup
+    handler.openIframe();
   };
 
   if (loading) {
@@ -114,78 +117,144 @@ function Checkout() {
           Checkout - {property.title}
         </h1>
 
-        <div className="bg-white rounded-2xl shadow-card p-8 md:p-12">
-          {/* Property Summary */}
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            <div>
-              <img
-                src={property.images?.[0] || 'https://via.placeholder.com/600x400?text=Property'}
-                alt={property.title}
-                className="w-full h-64 md:h-80 object-cover rounded-xl shadow-md"
-              />
+        {showScamWarning ? (
+          // ── SCAM WARNING MODAL ──
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative">
+              <h2 className="text-2xl md:text-3xl font-bold text-red-600 mb-5 text-center">
+                ⚠️ IMPORTANT: Anti-Scam Notice
+              </h2>
+
+              <p className="text-lg md:text-xl mb-6 text-center leading-relaxed text-gray-800">
+                Do <strong>NOT</strong> send money to any agent's personal account.<br />
+                All payments must go <strong>ONLY</strong> to the official company account to avoid being scammed.
+              </p>
+
+              <div className="bg-red-50 border border-red-200 p-5 rounded-lg mb-6">
+                <p className="font-semibold mb-3 text-center">Official Company Account Details</p>
+                <ul className="space-y-2 text-sm md:text-base">
+                  <li><strong>Bank:</strong> [Replace with your bank e.g. GTBank / Zenith / Access]</li>
+                  <li><strong>Account Name:</strong> HomeMu Limited / [Your Official Company Name]</li>
+                  <li><strong>Account Number:</strong> [XXXXXXXXXX]</li>
+                  <li><strong>Payment Reference:</strong> Use property slug or booking ID</li>
+                </ul>
+              </div>
+
+              <div className="flex items-start mb-6">
+                <input
+                  type="checkbox"
+                  id="scam-agree"
+                  checked={hasAgreed}
+                  onChange={(e) => setHasAgreed(e.target.checked)}
+                  className="h-5 w-5 mt-1 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label htmlFor="scam-agree" className="ml-3 text-gray-700 text-base">
+                  I confirm that I will pay <strong>ONLY</strong> to the official company account shown above
+                  and I understand that any payment to an agent’s personal account is at my own risk.
+                </label>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => navigate(-1)} // or navigate('/properties')
+                  className="flex-1 bg-gray-300 text-gray-800 py-4 rounded-xl font-semibold hover:bg-gray-400 transition"
+                >
+                  Cancel & Go Back
+                </button>
+
+                <button
+                  onClick={() => setShowScamWarning(false)}
+                  disabled={!hasAgreed}
+                  className={`flex-1 py-4 rounded-xl font-bold text-white transition ${
+                    hasAgreed
+                      ? 'bg-primary hover:bg-primary/90'
+                      : 'bg-gray-400 cursor-not-allowed opacity-70'
+                  }`}
+                >
+                  I Understand – Proceed to Payment
+                </button>
+              </div>
+
+              <p className="text-xs text-center mt-6 text-gray-500">
+                We never ask for direct transfers to individuals. Report suspicious requests immediately.
+              </p>
             </div>
-            <div className="space-y-6 flex flex-col justify-center">
+          </div>
+        ) : (
+          // ── NORMAL CHECKOUT CONTENT (only shown after agreement) ──
+          <div className="bg-white rounded-2xl shadow-card p-8 md:p-12">
+            {/* Property Summary */}
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
               <div>
-                <span className="inline-block bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold mb-4">
-                  {property.property_type || 'Property'}
-                </span>
-                <h2 className="text-3xl font-bold text-text-primary mb-2">
-                  {property.title}
-                </h2>
-                <p className="text-2xl font-bold text-primary">
-                  ₦{parseInt(property.price || 0).toLocaleString()}
-                </p>
-                <p className="text-lg text-text-muted mt-2">
-                  {property.location}
-                </p>
+                <img
+                  src={property.images?.[0] || 'https://via.placeholder.com/600x400?text=Property'}
+                  alt={property.title}
+                  className="w-full h-64 md:h-80 object-cover rounded-xl shadow-md"
+                />
               </div>
+              <div className="space-y-6 flex flex-col justify-center">
+                <div>
+                  <span className="inline-block bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold mb-4">
+                    {property.property_type || 'Property'}
+                  </span>
+                  <h2 className="text-3xl font-bold text-text-primary mb-2">
+                    {property.title}
+                  </h2>
+                  <p className="text-2xl font-bold text-primary">
+                    ₦{parseInt(property.price || 0).toLocaleString()}
+                  </p>
+                  <p className="text-lg text-text-muted mt-2">
+                    {property.location}
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold">{property.bedrooms || '-'}</p>
-                  <p className="text-text-muted text-sm">Bedrooms</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{property.bathrooms || '-'}</p>
-                  <p className="text-text-muted text-sm">Bathrooms</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{property.size || '-'}</p>
-                  <p className="text-text-muted text-sm">sqm</p>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold">{property.bedrooms || '-'}</p>
+                    <p className="text-text-muted text-sm">Bedrooms</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{property.bathrooms || '-'}</p>
+                    <p className="text-text-muted text-sm">Bathrooms</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{property.size || '-'}</p>
+                    <p className="text-text-muted text-sm">sqm</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Payment Section */}
-          <div className="border-t border-border-light pt-8">
-            <h3 className="text-2xl font-bold text-text-primary mb-6 text-center">
-              Complete Secure Payment
-            </h3>
+            {/* Payment Section */}
+            <div className="border-t border-border-light pt-8">
+              <h3 className="text-2xl font-bold text-text-primary mb-6 text-center">
+                Complete Secure Payment
+              </h3>
 
-            <div className="max-w-md mx-auto text-center space-y-6">
-              <p className="text-xl text-text-muted">
-                Secure payment via Paystack
-              </p>
+              <div className="max-w-md mx-auto text-center space-y-6">
+                <p className="text-xl text-text-muted">
+                  Secure payment via Paystack
+                </p>
 
-              <button
-                onClick={payWithPaystack}
-                disabled={paymentLoading}
-                className="btn-primary py-5 px-12 text-xl font-bold w-full md:w-auto mx-auto block disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {paymentLoading ? 'Processing...' : 'Pay Now'}
-              </button>
+                <button
+                  onClick={payWithPaystack}
+                  disabled={paymentLoading}
+                  className="btn-primary py-5 px-12 text-xl font-bold w-full md:w-auto mx-auto block disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {paymentLoading ? 'Processing...' : 'Pay Now'}
+                </button>
 
-              {error && (
-                <p className="text-red-600 text-sm mt-4">{error}</p>
-              )}
+                {error && (
+                  <p className="text-red-600 text-sm mt-4">{error}</p>
+                )}
 
-              <p className="text-sm text-text-muted mt-4">
-                Your payment is protected. No charges until confirmation.
-              </p>
+                <p className="text-sm text-text-muted mt-4">
+                  Your payment is protected. No charges until confirmation.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="text-center mt-12">
           <Link to={`/properties/detail/${slug}`} className="text-primary hover:underline text-lg">
