@@ -26,6 +26,7 @@ import Properties from './pages/AllProperties';
 import Logout from './pages/Logout';
 import VerifyEmail from './pages/VerifyEmail';
 import AgentProperties from './pages/AgentProperties';
+import EditProperty from './pages/EditProperties';
 import Wallets from './pages/Wallet';
 import Checkout from './pages/Checkout';
 
@@ -34,15 +35,19 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const location = useLocation();
 
+  // Show login modal for unauthenticated users after delay, but NOT on auth pages
   useEffect(() => {
-  if (!isAuthenticated) {
-    const timer = setTimeout(() => {
-      setShowLoginModal(true);
-    }, 4500); // 4.5 seconds delay – you can change to 3000, 5000, 6000 etc.
+    // Don't show modal on auth pages or if user is authenticated
+    const isAuthPage = ['/login', '/signup', '/verify-email'].includes(location.pathname);
+    
+    if (!isAuthenticated && !isAuthPage) {
+      const timer = setTimeout(() => {
+        setShowLoginModal(true);
+      }, 4500); // 4.5 seconds delay
 
-    return () => clearTimeout(timer);
-  }
-}, [isAuthenticated]);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, location.pathname]); // ✅ Added proper dependencies
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
@@ -58,7 +63,7 @@ function App() {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onSuccess = {handleLoginSuccess}
+        onSuccess={handleLoginSuccess}
       />
 
       {/* Only render header, main content & footer when modal is closed */}
@@ -68,7 +73,7 @@ function App() {
 
           <main className="grow">
             <Routes>
-              {/* Public */}
+              {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/buy" element={<Buy />} />
               <Route path="/rent" element={<Rent />} />
@@ -83,41 +88,75 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/logout" element={<Logout />} />
+              <Route path="/become-agent" element={<BecomeAgent />} />
 
               {/* Properties */}
               <Route path="/properties" element={<Properties />} />
               <Route path="/all-properties" element={<Properties />} />
-              <Route path="/properties/detail/:slug" element={<PropertyDetails />} />
-              <Route path="/property/:slug" element={<PropertyDetails />} />
-              <Route path="/checkout/:slug" element={<Checkout />} />
+              
+              <Route path="/properties/detail/:id" element={<PropertyDetails />} />
+              <Route path="/property/:id" element={<PropertyDetails />} />
+              <Route path="/checkout/:id" element={<Checkout />} />
 
-              {/* Agent Protected */}
-              <Route path="/agent-dashboard" element={isAuthenticated && isAgent ? <AgentDashboard /> : <Navigate to="/" replace />}
-                />
-              <Route
-                path="/list-property"
-                element={isAuthenticated && isAgent ? <ListProperties /> : <Navigate to="/" replace />}
+              {/* Agent Protected Routes */}
+              <Route 
+                path="/agent-dashboard" 
+                element={
+                  isAuthenticated && isAgent ? 
+                    <AgentDashboard /> : 
+                    <Navigate to="/" replace />
+                } 
               />
               <Route
+                path="/list-property"
+                element={
+                  isAuthenticated && isAgent ? 
+                    <ListProperties /> : 
+                    <Navigate to="/" replace />
+                }
+                
+              />
+              
+              <Route
                 path="/agent/properties"
-                element={isAuthenticated && isAgent ? <AgentProperties /> : <Navigate to="/" replace />}
+                element={
+                  isAuthenticated && isAgent ? 
+                    <AgentProperties /> : 
+                    <Navigate to="/" replace />
+                }
               />
               <Route
                 path="/wallet"
-                element={isAuthenticated && isAgent ? <Wallets /> : <Navigate to="/" replace />}
+                element={
+                  isAuthenticated && isAgent ? 
+                    <Wallets /> : 
+                    <Navigate to="/" replace />
+                }
               />
+              <Route
+  path="/edit-property/:id"
+  element={isAuthenticated && isAgent ? <EditProperty /> : <Navigate to="/" replace />}
+/>
 
-              {/* Admin */}
+              {/* Admin Protected Routes */}
               <Route
                 path="/admin"
-                element={isAuthenticated && user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" replace />}
+                element={
+                  isAuthenticated && user?.role === 'admin' ? 
+                    <AdminDashboard /> : 
+                    <Navigate to="/" replace />
+                }
               />
 
-              {/* Become Agent */}
-              <Route path="/become-agent" element={<BecomeAgent />} />
-
-              {/* 404 */}
-              <Route path="*" element={<div className="min-h-screen flex items-center justify-center text-2xl">404 - Page Not Found</div>} />
+              {/* 404 Route */}
+              <Route 
+                path="*" 
+                element={
+                  <div className="min-h-screen flex items-center justify-center text-2xl">
+                    404 - Page Not Found
+                  </div>
+                } 
+              />
             </Routes>
           </main>
 

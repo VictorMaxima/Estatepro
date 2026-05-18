@@ -13,6 +13,7 @@ function AgentDashboard() {
   const navigate = useNavigate();
 
   const token = localStorage.getItem('accessToken');
+ 
 
   useEffect(() => {
     if (!token) {
@@ -25,7 +26,7 @@ function AgentDashboard() {
       if (!token) return;
 
       try {
-        const response = await fetch(`${API_URL}api/agent/properties`, {
+        const response = await fetch(`${API_URL}agent/properties`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
 

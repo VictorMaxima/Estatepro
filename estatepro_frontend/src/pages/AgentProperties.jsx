@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API_URL from '@/config/api';
+import { BASE_URL } from '../config/Api';
 
 function AgentProperties() {
   const [properties, setProperties] = useState([]);
@@ -97,7 +98,7 @@ function AgentProperties() {
                 <div className="h-48 bg-gray-200 relative">
                   {property.images?.[0] ? (
                     <img
-                      src={property.images[0]}
+                      src={BASE_URL + property.images[0].image_url}
                       alt={property.title}
                       className="w-full h-full object-cover"
                     />
@@ -131,12 +132,9 @@ function AgentProperties() {
                     >
                       View Details
                     </Link>
-                    <button
-                      className="flex-1 py-3 bg-gray-200 text-text-muted rounded-lg hover:bg-gray-300 transition"
-                      onClick={() => alert('Edit feature coming soon')}
-                    >
-                      Edit
-                    </button>
+                    <Link to={`/edit-property/${property.id}`} className="flex-1 text-center py-3 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition">
+  Edit Property
+                    </Link>
                   </div>
                 </div>
               </div>

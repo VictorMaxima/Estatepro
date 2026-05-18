@@ -24,7 +24,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = AppUser.objects.create_user(
-            username=validated_data['full_name'],
+            username=validated_data['email'],
             full_name=validated_data['full_name'],
             email=validated_data['email'],
             password=validated_data['password'],
@@ -108,15 +108,14 @@ class ListAgentPropertySerializer(serializers.ModelSerializer):
         model = Property
         fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
-                  'images', 'slug']
+                  'images', 'id']
 
 class ListPropertySerializer(serializers.ModelSerializer):
     images = PropertyImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Property
-        fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
-                  'slug','images', ]
+        fields = ['title','id', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms','images', ]
 
 class AgentDetailSerializer(serializers.ModelSerializer):
 

@@ -1,19 +1,51 @@
 // src/pages/PropertyDetails.jsx
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { API_URL, BASE_URL } from '@/config/api';
 
 function PropertyDetails() {
-  const { slug } = useParams();
+  const { id } = useParams();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+    
+    return `${cleanBaseUrl}/${cleanPath}`;
+  };
+
+  // Get all images
+  const getAllImages = () => {
+    if (!property?.images || property.images.length === 0) {
+      return [];
+    }
+    return property.images.map(img => getFullImageUrl(img.image_url));
+  };
+
+  const images = getAllImages();
+
+  // Navigation functions
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await fetch(`${API_URL}properties/detail/${property.slug}`, {
-          
+        const response = await fetch(`${API_URL}properties/detail/${id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
@@ -28,14 +60,20 @@ function PropertyDetails() {
 
         setProperty(data);
       } catch (err) {
+        console.error('Error fetching property:', err);
         setError(err.message || 'Failed to load property details');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProperty();
-  }, [slug]);
+    if (id) {
+      fetchProperty();
+    } else {
+      setError('No property id provided');
+      setLoading(false);
+    }
+  }, [id]);
 
   if (loading) {
     return (
@@ -53,7 +91,7 @@ function PropertyDetails() {
       <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
         <div className="text-center bg-white rounded-2xl shadow-card p-12 max-w-md">
           <h1 className="text-5xl font-bold text-text-primary mb-4">Property Not Found</h1>
-          <p className="text-xl text-text-muted mb-8">{error || 'Invalid property slug'}</p>
+          <p className="text-xl text-text-muted mb-8">{error || 'Invalid property id'}</p>
           <Link to="/properties" className="text-primary text-lg hover:underline">
             ← Back to Properties
           </Link>
@@ -64,18 +102,78 @@ function PropertyDetails() {
 
   return (
     <div className="min-h-screen bg-bg-soft">
-      {/* Hero Image */}
-      <div className="relative">
-        <img
-          src={property.images?.[0] || 'https://via.placeholder.com/1200x800?text=Property+Image'}
-          alt={property.title}
-          className="w-full h-96 md:h-screen object-cover"
-        />
-        <div className="absolute inset-0 bg-primary bg-opacity-40" />
-        <div className="absolute top-4 left-4">
+      {/* Hero Image Carousel */}
+      <div className="relative bg-gray-900">
+        {images.length > 0 ? (
+          <>
+            <img 
+              src={images[currentImageIndex]}
+              alt={property.title}
+              className="w-full h-[500px] object-contain"
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/1200x800?text=Image+Not+Available';
+              }}
+            />
+            
+            {/* Left Arrow */}
+            {images.length > 1 && (
+              <button
+                onClick={prevImage}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition duration-300 z-10"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            
+            {/* Right Arrow */}
+            {images.length > 1 && (
+              <button
+                onClick={nextImage}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition duration-300 z-10"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+            
+            {/* Image Counter */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm z-10">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            )}
+            
+            {/* Thumbnail Dots */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === currentImageIndex 
+                        ? 'bg-white w-6' 
+                        : 'bg-white/50 w-2 hover:bg-white/80'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-[500px] bg-gray-200 flex items-center justify-center">
+            <p className="text-gray-500">No images available</p>
+          </div>
+        )}
+        
+        {/* Back Button - Positioned over the image */}
+        <div className="absolute top-4 left-4 z-20">
           <Link
             to="/properties"
-            className="bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-white transition"
+            className="inline-block bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg"
           >
             ← Back
           </Link>
@@ -90,7 +188,7 @@ function PropertyDetails() {
             <div className="bg-white rounded-xl shadow-card p-8">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-6">
                 <div>
-                  <span className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                  <span className="inline-block bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold capitalize">
                     {property.property_type || 'Property'}
                   </span>
                   <h1 className="text-4xl font-bold text-text-primary mt-4">
@@ -105,15 +203,21 @@ function PropertyDetails() {
 
               <div className="grid grid-cols-3 gap-6 py-8 border-y border-border-light">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-text-primary">{property.bedrooms || '-'}</p>
+                  <p className="text-3xl font-bold text-text-primary">
+                    {property.no_of_bedrooms || '-'}
+                  </p>
                   <p className="text-text-muted">Bedrooms</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-text-primary">{property.bathrooms || '-'}</p>
+                  <p className="text-3xl font-bold text-text-primary">
+                    {property.no_of_bathrooms || '-'}
+                  </p>
                   <p className="text-text-muted">Bathrooms</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-text-primary">{property.size || '-'}</p>
+                  <p className="text-3xl font-bold text-text-primary">
+                    {property.size || '-'}
+                  </p>
                   <p className="text-text-muted">sqm</p>
                 </div>
               </div>
@@ -128,26 +232,36 @@ function PropertyDetails() {
               <div className="mt-8">
                 <h2 className="text-2xl font-bold text-text-primary mb-4">Amenities</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {property.amenities && Object.keys(property.amenities).length > 0 ? (
-                    Object.entries(property.amenities).map(([amenity, isAvailable]) =>
-                      isAvailable ? (
-                        <div key={amenity} className="flex items-center gap-3">
-                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-sm">✓</div>
-                          <span className="text-text-muted">{amenity}</span>
-                        </div>
-                      ) : null
-                    )
-                  ) : (
-                    <p className="text-text-muted">No amenities listed</p>
-                  )}
+                  {Object.entries({
+                    swimming_pool: property.swimming_pool,
+                    parking: property.parking,
+                    air_conditioning: property.air_conditioning,
+                    borehole: property.borehole,
+                    gym: property.gym,
+                    garden: property.garden,
+                    wifi: property.wifi,
+                    furnished: property.furnished,
+                    balcony: property.balcony,
+                    generator: property.generator,
+                    serviced: property.serviced,
+                  }).map(([amenity, isAvailable]) => (
+                    isAvailable ? (
+                      <div key={amenity} className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                        <span className="text-text-muted capitalize">
+                          {amenity.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    ) : null
+                  ))}
                 </div>
               </div>
 
               {/* Proceed to Checkout Button */}
               <div className="mt-12">
                 <Link
-                  to={`/checkout/${slug}`}
-                  className="block w-full btn-primary py-5 text-xl font-bold text-center hover:bg-primary-dark transition"
+                  to={`/checkout/${id}`}
+                  className="block w-full bg-primary text-white text-center py-5 rounded-xl font-bold text-xl hover:bg-primary-dark transition"
                 >
                   Proceed to Checkout
                 </Link>
@@ -166,7 +280,7 @@ function PropertyDetails() {
                 </div>
                 <div>
                   <p className="font-semibold text-text-primary text-xl">
-                    {property.agent?.name || 'Agent Name'}
+                    {property.agent?.full_name || 'Agent Name'}
                   </p>
                   <p className="text-text-muted text-sm">
                     {property.agent?.email || 'agent@example.com'}
@@ -175,7 +289,7 @@ function PropertyDetails() {
               </div>
 
               <div className="space-y-4">
-                <button className="w-full btn-primary py-4 text-lg">
+                <button className="w-full bg-primary text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition">
                   Schedule Viewing
                 </button>
 
@@ -184,15 +298,15 @@ function PropertyDetails() {
                 </button>
 
                 <a
-                  href={`tel:${property.agent?.phone}`}
-                  className="w-full block border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg text-center"
+                  href={`tel:${property.agent?.phone_number}`}
+                  className="block w-full border border-border-light text-text-primary py-4 rounded-xl text-center hover:bg-bg-soft transition text-lg"
                 >
-                  Call: {property.agent?.phone || '+234 803 000 0000'}
+                  Call: {property.agent?.phone_number || '+234 803 000 0000'}
                 </a>
 
                 <a
                   href={`mailto:${property.agent?.email}`}
-                  className="w-full block border border-border-light text-text-primary py-4 rounded-xl hover:bg-bg-soft transition text-lg text-center mt-2"
+                  className="block w-full border border-border-light text-text-primary py-4 rounded-xl text-center hover:bg-bg-soft transition text-lg"
                 >
                   Email Agent
                 </a>

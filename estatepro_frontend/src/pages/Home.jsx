@@ -17,13 +17,37 @@ import {
   X,
   LogIn,  // ← optional new import for modal icon (can remove if you prefer)
 } from 'lucide-react';
+import API_URL from '@/config/api';
 
 import SearchBar from '../components/common/SearchBar';
 import PropertyCard from '../components/common/PropertyCard';
-import properties from '../data/DummyProperties.json';
+
 
 function Home() {
-  const featured = properties.slice(0, 6);
+  const [properties, setProperties] = useState([]);
+  useEffect(() => {
+      const fetchProperties = async () => {
+        try {
+          const response = await fetch(`${API_URL}properties`);
+          const data = await response.json();
+    
+  
+          if (!response.ok) {
+            throw new Error(data.detail || data.message || 'Failed to load properties');
+          }
+  
+          setProperties(data);
+          setFilteredProperties(data); // initial full list
+        } catch (err) {
+          setError(err.message || 'Could not load properties. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchProperties();
+    }, []);
+
 
   const services = [
     { name: 'Rent Apartment', path: '/rent', icon: House },
@@ -171,7 +195,7 @@ function Home() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featured.map((property) => (
+            {properties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>

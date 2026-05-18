@@ -6,7 +6,6 @@ function Signup() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -28,11 +27,6 @@ function Signup() {
       return;
     }
 
-    if (!formData.phone) {
-      setError('Phone number is required');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -42,9 +36,8 @@ function Signup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
+          full_name: formData.name,
           email: formData.email,
-          phone: formData.phone,
           password: formData.password,
           
         }),
@@ -101,17 +94,6 @@ function Signup() {
             required
             className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
-
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Phone Number"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-
           <input
             type="password"
             name="password"

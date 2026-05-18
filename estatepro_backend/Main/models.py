@@ -102,11 +102,7 @@ class Property(models.Model):
     balcony = models.BooleanField(default=False)
     generator = models.BooleanField(default=False)
     serviced = models.BooleanField(default=False)
-    slug = models.SlugField(blank=True, unique=True)
 
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.title + self.location + str(self.id))
-        super().save( *args, **kwargs)
 
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="images")

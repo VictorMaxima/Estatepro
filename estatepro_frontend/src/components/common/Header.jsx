@@ -5,9 +5,12 @@ import ProfileDropdown from '../ProfileDropdown';
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user } = useAuth(); 
+  const { user, isAgent } = useAuth(); // Get isAgent from auth context
 
   const closeMenu = () => setMobileMenuOpen(false);
+
+  // Helper to check if user is an agent
+  const userIsAgent = user?.is_agent === true || user?.is_agent === 'approved' || isAgent;
 
   return (
     <header className="bg-primary sticky top-0 z-50 shadow-soft">
@@ -75,14 +78,38 @@ function Header() {
                 </>
               )}
 
-              <Link
-                to="/become-agent"
-                className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
-              >
-                Become An Agent
-              </Link>
+              {/* Show for non-logged in users */}
+              {!user && (
+                <Link
+                  to="/become-agent"
+                  className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
+                >
+                  Become An Agent
+                </Link>
+              )}
 
-              {user && user.isAgent === 'approved' && (
+              {/* Show Agent Dashboard for logged-in agents only */}
+              {user && userIsAgent && (
+                <Link
+                  to="/agent-dashboard"
+                  className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
+                >
+                  Agent Dashboard
+                </Link>
+              )}
+
+              {/* Show Become Agent for logged-in non-agents */}
+              {user && !userIsAgent && (
+                <Link
+                  to="/become-agent"
+                  className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
+                >
+                  Become An Agent
+                </Link>
+              )}
+
+              {/* List Property - Only for approved agents (is_agent === 'approved' or true) */}
+              {user && (user.is_agent === 'approved' || user.is_agent === true) && (
                 <Link
                   to="/list-property"
                   className="ml-14 bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
@@ -191,15 +218,41 @@ function Header() {
                   </>
                 )}
 
-                <Link
-                  to="/become-agent"
-                  onClick={closeMenu}
-                  className="block text-center bg-white text-primary font-bold py-3 rounded-xl hover:bg-gray-100 transition"
-                >
-                  Become An Agent
-                </Link>
+                {/* Mobile: Show for non-logged in users */}
+                {!user && (
+                  <Link
+                    to="/become-agent"
+                    onClick={closeMenu}
+                    className="block text-center bg-white text-primary font-bold py-3 rounded-xl hover:bg-gray-100 transition"
+                  >
+                    Become An Agent
+                  </Link>
+                )}
 
-                {user && user.isAgent === 'approved' && (
+                {/* Mobile: Agent Dashboard for agents */}
+                {user && userIsAgent && (
+                  <Link
+                    to="/agent-dashboard"
+                    onClick={closeMenu}
+                    className="block text-center bg-white text-primary font-bold py-3 rounded-xl hover:bg-gray-100 transition"
+                  >
+                    Agent Dashboard
+                  </Link>
+                )}
+
+                {/* Mobile: Become Agent for non-agents */}
+                {user && !userIsAgent && (
+                  <Link
+                    to="/become-agent"
+                    onClick={closeMenu}
+                    className="block text-center bg-white text-primary font-bold py-3 rounded-xl hover:bg-gray-100 transition"
+                  >
+                    Become An Agent
+                  </Link>
+                )}
+
+                {/* Mobile: List Property for approved agents */}
+                {user && (user.is_agent === 'approved' || user.is_agent === true) && (
                   <Link
                     to="/list-property"
                     onClick={closeMenu}

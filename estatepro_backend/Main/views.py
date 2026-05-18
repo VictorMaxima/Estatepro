@@ -139,8 +139,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 {
                     'access_token': str(access_token),
                     'refresh_token': str(refresh_token),
+                    'full_name': user.full_name,
                     'user_id': user.id,
-                    'agentstatus': user.agent_status
+                    'is_agent': user.agent_status
                 }
             )
         return Response({'error': 'Invalid credentials'})
@@ -238,7 +239,7 @@ class ListAgentPropertiesView(APIView):
     def get(self, request):
         if not self.request.user.agent_status:
             raise ValidationError("Apply to be an agent first before trying to list a property")
-        properties = request.user.properties.all()
+        properties = request.user.listings.all()
         serializer = ListAgentPropertySerializer(properties, many=True)
         return Response(serializer.data)
 
@@ -254,8 +255,8 @@ class PropertyDetailView(APIView):
     serializer = PropertyDetailSerializer
     permission_classes = [permissions.AllowAny]
     authentication_classes = [OptionalJWTAuthentication]
-    def get(self, request, slug):
-        property = get_object_or_404(Property, slug=slug)
+    def get(self, request, id):
+        property = get_object_or_404(Property, id=id)
         serializer = PropertyDetailSerializer(property)
         if request.user.is_authenticated and Transaction.objects.filter(property=property, buyer=request.user).exists():
             transaction = get_object_or_404(Transaction, buyer=request.user, property=property)
@@ -267,6 +268,137 @@ class PropertyDetailView(APIView):
     
 
 
+class EditPropertyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    
+    @swagger_auto_schema(
+        operation_description="Update a property listing",
+        request_body=PropertyDetailSerializer,
+        responses={
+            200: openapi.Response('Property updated successfully', PropertyDetailSerializer),
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+            404: 'Property not found'
+        }
+    )
+    def put(self, request, property_id):
+        """
+        Update an existing property
+        """
+        # Get the property or return 404
+        property_obj = get_object_or_404(Property, id=property_id)
+        
+        # Check if the logged-in user is the agent who owns this property
+        if property_obj.agent != request.user:
+            return Response(
+                {'error': 'You do not have permission to edit this property'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate required fields
+        required_fields = ['title', 'description', 'location', 'price', 
+                          'property_type', 'size', 'no_of_bedrooms', 'no_of_bathrooms']
+        
+        missing_fields = [field for field in required_fields if not request.data.get(field)]
+        if missing_fields:
+            return Response(
+                {'error': f'Missing required fields: {", ".join(missing_fields)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update the property
+        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=False)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    'message': 'Property updated successfully',
+                    'property': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @swagger_auto_schema(
+        operation_description="Partially update a property listing",
+        request_body=PropertyDetailSerializer,
+        responses={
+            200: openapi.Response('Property updated successfully', PropertyDetailSerializer),
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+            404: 'Property not found'
+        }
+    )
+    def patch(self, request, property_id):
+        """
+        Partially update an existing property
+        """
+        property_obj = get_object_or_404(Property, id=property_id)
+        
+        # Check permission
+        if property_obj.agent != request.user:
+            return Response(
+                {'error': 'You do not have permission to edit this property'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    'message': 'Property updated successfully',
+                    'property': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeletePropertyImageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    
+    @swagger_auto_schema(
+        operation_description="Delete a property image",
+        responses={
+            200: 'Image deleted successfully',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+            404: 'Image not found'
+        }
+    )
+    def delete(self, request, image_id):
+        """
+        Delete a specific property image
+        """
+        image = get_object_or_404(PropertyImage, id=image_id)
+        
+        # Check if the logged-in user owns the property
+        if image.property.agent != request.user:
+            return Response(
+                {'error': 'You do not have permission to delete this image'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Delete the image file from storage
+        if image.image:
+            image.image.delete(save=False)
+        
+        # Delete the database record
+        image.delete()
+        
+        return Response(
+            {'message': 'Image deleted successfully'},
+            status=status.HTTP_200_OK
+        )
     
 
 

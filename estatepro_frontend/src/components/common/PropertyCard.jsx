@@ -1,9 +1,17 @@
 // src/components/common/PropertyCard.jsx
 import { Link } from 'react-router-dom';
+import { BASE_URL } from '../../config/Api';
 
 function PropertyCard({ property, linkTo }) {
+  // Guard clause - handle null/undefined property
+  if (!property) {
+    return null; // or return a placeholder/skeleton
+  }
+
   // Safe fallbacks for all fields
-  const imageUrl = property.image || property.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image';
+  const imageUrl = property?.images?.[0]?.image_url 
+  ? `${BASE_URL}${property.images[0].image_url}` 
+  : 'https://via.placeholder.com/1200x800?text=Property+Image';
   const title = property.title || 'Untitled Property';
   const price = property.price ? `₦${parseInt(property.price).toLocaleString()}` : 'Price on Request';
   const location = property.location || 'Location N/A';
@@ -13,13 +21,14 @@ function PropertyCard({ property, linkTo }) {
   const sqft = property.sqft || property.size || '-';
 
   // Slug fallback for link
-  const slug = property.slug || property.id || 'unknown';
+  const id = property.id || 'unknown';
 
   return (
     <Link
-      to={linkTo || `/properties/detail/${slug}`}
+      to={linkTo || `/properties/detail/${id}`}
       className="block h-full group no-underline"
     >
+      {/* Rest of your JSX */}
       <div className="bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden h-full flex flex-col">
         {/* Image Section */}
         <div className="relative overflow-hidden">
