@@ -1,7 +1,7 @@
 // src/pages/AgentDashboard.jsx
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function AgentDashboard() {
   const [stats, setStats] = useState({ totalProperties: 0 });
@@ -10,45 +10,44 @@ function AgentDashboard() {
   const [loading, setLoading] = useState(true);
   const [walletLoading, setWalletLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-
-  const token = localStorage.getItem('accessToken');
- 
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-    }
-  }, [token, navigate]);
-
+  const { api, user, logout } = useAuth(); // Added user and logout
+  
+  // Fixed: Added dependency array to prevent infinite loops
   useEffect(() => {
     const fetchStats = async () => {
-      if (!token) return;
-
       try {
-        const response = await fetch(`${API_URL}agent/properties`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) throw new Error('Failed to load properties');
+        const response = await api.get('/agent/properties');
+        
+        // No need for .json() - api instance already parses JSON
+        const data = response.data;
 
         setStats({ totalProperties: data.length || 0 });
       } catch (err) {
+        console.error('Failed to load stats:', err);
         setError('Could not load dashboard stats');
+        
+        // Handle unauthorized access
+        if (err.response?.status === 401) {
+          logout();
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, [token]);
+  }, [api, logout]); // Added dependency array
 
+  // Fixed: Added dependency array for wallet fetch
   useEffect(() => {
     const fetchWallet = async () => {
       try {
+        // Replace with actual API call when backend is ready
+        // const response = await api.get('/agent/wallet/');
+        // setWalletBalance(response.data.balance);
+        // setPayouts(response.data.payouts);
         
+        // Temporary mock data
         setWalletBalance(45250);
         setPayouts([
           { id: 1, date: '2026-01-01', amount: 12500, status: 'Paid' },
@@ -57,13 +56,16 @@ function AgentDashboard() {
         ]);
       } catch (err) {
         console.error('Wallet load error:', err);
+        if (err.response?.status === 401) {
+          logout();
+        }
       } finally {
         setWalletLoading(false);
       }
     };
 
     fetchWallet();
-  }, [token]);
+  }, [api, logout]); // Added dependency array
 
   const [formData, setFormData] = useState({
     bankName: '',
@@ -101,13 +103,21 @@ function AgentDashboard() {
     setWithdrawLoading(true);
 
     try {
+      // Replace with actual API call when backend is ready
+      // const response = await api.post('/agent/withdraw/', {
+      //   bank_name: formData.bankName,
+      //   account_number: formData.accountNumber,
+      //   account_name: formData.accountName,
+      //   amount: formData.amount
+      // });
       
+      // Mock successful withdrawal
       setWalletBalance(prev => prev - Number(formData.amount));
       setPayouts([
         {
           id: payouts.length + 1,
           date: new Date().toISOString().split('T')[0],
-          amount: formData.amount,
+          amount: Number(formData.amount),
           status: 'Pending',
         },
         ...payouts,
@@ -115,12 +125,50 @@ function AgentDashboard() {
 
       setWithdrawSuccess(true);
       setFormData({ bankName: '', accountNumber: '', accountName: '', amount: '' });
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setWithdrawSuccess(false), 5000);
     } catch (err) {
-      setWithdrawError('Failed to submit withdrawal request');
+      console.error('Withdrawal error:', err);
+      setWithdrawError(err.response?.data?.message || 'Failed to submit withdrawal request');
+      
+      if (err.response?.status === 401) {
+        logout();
+      }
     } finally {
       setWithdrawLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (loading && walletLoading) {
+    return (
+      <div className="min-h-screen bg-bg-soft flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto"></div>
+          <p className="mt-4 text-text-muted">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen bg-bg-soft flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-card p-8 text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Unable to Load Dashboard</h2>
+          <p className="text-text-muted mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary py-3 px-6"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-soft py-12 px-4">
@@ -128,7 +176,7 @@ function AgentDashboard() {
         {/* Hero Welcome Section */}
         <div className="bg-white rounded-2xl shadow-card p-10 md:p-16 text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-extrabold text-text-primary mb-6">
-            Welcome back, Agent!
+            Welcome back, {user?.name || 'Agent'}!
           </h1>
           <p className="text-xl md:text-2xl text-text-muted max-w-4xl mx-auto leading-relaxed">
             You're a verified HomeMu agent — trusted by thousands of buyers, renters, and investors across Nigeria.
@@ -208,7 +256,7 @@ function AgentDashboard() {
           ) : (
             <>
               {/* Balance Display */}
-              <div className="bg-linear-to-r from-primary to-primary-dark text-white rounded-2xl p-8 text-center mb-10">
+              <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl p-8 text-center mb-10">
                 <p className="text-xl opacity-90 mb-4">Available Earnings</p>
                 <p className="text-5xl md:text-6xl font-extrabold">
                   ₦{walletBalance.toLocaleString()}
@@ -234,11 +282,17 @@ function AgentDashboard() {
                         <div key={payout.id} className="flex justify-between items-center bg-bg-soft p-4 rounded-lg">
                           <div>
                             <p className="font-semibold">{payout.date}</p>
-                            <p className="text-sm text-text-muted">Referral commission</p>
+                            <p className="text-sm text-text-muted">Commission earnings</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">₦{payout.amount.toLocaleString()}</p>
-                            <p className={`text-sm ${payout.status === 'Paid' ? 'text-green-600' : 'text-yellow-600'}`}>
+                            <p className={`text-sm ${
+                              payout.status === 'Paid' 
+                                ? 'text-green-600' 
+                                : payout.status === 'Pending' 
+                                ? 'text-yellow-600' 
+                                : 'text-text-muted'
+                            }`}>
                               {payout.status}
                             </p>
                           </div>

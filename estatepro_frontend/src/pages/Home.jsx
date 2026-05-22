@@ -1,5 +1,6 @@
+// src/pages/Home.jsx
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';  // ← changed: added useEffect
+import { useState, useEffect } from 'react';
 import {
   House,
   Store,
@@ -8,46 +9,48 @@ import {
   Map,
   Calendar,
   Shield,
-  Plane,
   CreditCard,
   Clock,
   Star,
   BookOpen,
   Menu,
   X,
-  LogIn,  // ← optional new import for modal icon (can remove if you prefer)
 } from 'lucide-react';
-import API_URL from '@/config/api';
-
 import SearchBar from '../components/common/SearchBar';
 import PropertyCard from '../components/common/PropertyCard';
 
-
 function Home() {
   const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   useEffect(() => {
-      const fetchProperties = async () => {
-        try {
-          const response = await fetch(`${API_URL}properties`);
-          const data = await response.json();
-    
-  
-          if (!response.ok) {
-            throw new Error(data.detail || data.message || 'Failed to load properties');
-          }
-  
-          setProperties(data);
-          setFilteredProperties(data); // initial full list
-        } catch (err) {
-          setError(err.message || 'Could not load properties. Please try again.');
-        } finally {
-          setLoading(false);
+    const fetchProperties = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/';
+        const response = await fetch(`${apiUrl}properties`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-      };
-  
-      fetchProperties();
-    }, []);
-
+        
+        const data = await response.json();
+        setProperties(data || []);
+        setFilteredProperties(data || []);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err.message || 'Could not load properties. Please try again.');
+        setProperties([]);
+        setFilteredProperties([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProperties();
+  }, []);
 
   const services = [
     { name: 'Rent Apartment', path: '/rent', icon: House },
@@ -65,21 +68,36 @@ function Home() {
     { icon: Star, title: 'Premium Service', text: 'Best agents & customer experience' },
   ];
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);  // ← NEW state
+  const displayProperties = Array.isArray(properties) ? properties.slice(0, 6) : [];
 
-  // NEW: Show login popup suggestion after ~4 seconds (only once per device/browser)
-  useEffect(() => {
-    const hasSeen = localStorage.getItem('loginPromptSeen');
-    if (!hasSeen) {
-      const timer = setTimeout(() => {
-        setShowLoginPrompt(true);
-        localStorage.setItem('loginPromptSeen', 'true');
-      }, 4000); // change to 3000 or 6000 if you want faster/slower
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-soft flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto"></div>
+          <p className="mt-4 text-text-muted">Loading properties...</p>
+        </div>
+      </div>
+    );
+  }
 
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  if (error && properties.length === 0) {
+    return (
+      <div className="min-h-screen bg-bg-soft flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-card p-8 text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Unable to Load Properties</h2>
+          <p className="text-text-muted mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -95,7 +113,7 @@ function Home() {
               Leisure at its<br />Peak
             </h1>
             <p className="text-xl md:text-2xl opacity-90">
-              We help you rent houses/ shops , buy land, and book hotels or short-stay apartments without stress.
+              We help you rent houses/shops, buy land, and book hotels or short-stay apartments without stress.
             </p>
           </div>
 
@@ -118,7 +136,7 @@ function Home() {
             })}
           </div>
 
-          {/* DESKTOP ONLY: Horizontal pill nav (six cards) */}
+          {/* DESKTOP ONLY: Horizontal pill nav */}
           <div className="hidden md:block relative z-30 -mb-6">
             <div className="bg-white rounded-full shadow-card inline-flex flex-wrap justify-center p-1 gap-1 mx-auto">
               {services.map((service) => {
@@ -137,7 +155,7 @@ function Home() {
             </div>
           </div>
 
-          {/* Search Bar - Always visible, positioned correctly */}
+          {/* Search Bar */}
           <div className="w-full max-w-5xl mx-auto mb-8 md:mt-0 px-2 md:px-0">
             <SearchBar />
           </div>
@@ -157,7 +175,7 @@ function Home() {
       {/* ================= MOBILE HAMBURGER MENU ================= */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 w-[90%] max-w-md animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-[90%] max-w-md">
             <div className="flex flex-col space-y-6 text-center">
               {services.map((service) => {
                 const Icon = service.icon;
@@ -174,10 +192,9 @@ function Home() {
                 );
               })}
 
-              {/* Become An Agent in mobile menu */}
               <Link
                 to="/become-agent"
-                className="btn-primary py-5 text-xl font-bold"
+                className="bg-primary text-white py-5 text-xl font-bold rounded-lg hover:bg-primary-dark transition"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Become An Agent
@@ -195,9 +212,15 @@ function Home() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
+            {displayProperties.length > 0 ? (
+              displayProperties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center text-text-muted py-12">
+                No properties available at the moment.
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-12">
@@ -266,7 +289,6 @@ function Home() {
       <section className="py-20 bg-primary text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Text content */}
             <div className="text-center lg:text-left">
               <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
                 Get Apartment/Shops for Rent and Lease
@@ -288,7 +310,7 @@ function Home() {
                   <BookOpen size={32} className="text-white shrink-0 mt-1" />
                   <div>
                     <h3 className="text-xl font-bold text-white text-left">
-                      Whether you’re leasing or renting, we offer top-tier property options tailored to your lifestyle and budget.
+                      Whether you're leasing or renting, we offer top-tier property options tailored to your lifestyle and budget.
                     </h3>
                   </div>
                 </div>
@@ -311,7 +333,6 @@ function Home() {
               </Link>
             </div>
 
-            {/* Right: Images grid */}
             <div className="grid grid-cols-2 gap-6">
               <img
                 src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -329,15 +350,16 @@ function Home() {
                 className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
               />
               <img
-                src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800"
-                alt="Luxury shortlet interior"
-                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80 -mt-12 lg:mt-0"
+                src="https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Luxury property"
+                className="rounded-xl shadow-2xl object-cover w-full h-64 lg:h-80"
               />
             </div>
           </div>
         </div>
       </section>
 
+      {/* ================= HOTELS AND SHORTLETS TIPS ================= */}
       <section className="py-20 bg-bg-soft">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -368,15 +390,15 @@ function Home() {
                   </div>
                 </div>
               </div>
-              <Link to="/hotel" className="inline-block mt-10 text-primary font-bold hover:underline text-lg">
+              <Link to="/hotels" className="inline-block mt-10 text-primary font-bold hover:underline text-lg">
                 Read All Tips →
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <img src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Guide" className="rounded-xl shadow-2xl" />
-              <img src="https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Location guide" className="rounded-xl shadow-2xl mt-12" />
-              <img src="https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Investment" className="rounded-xl shadow-2xl -mt-12" />
-              <img src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Tips" className="rounded-xl shadow-2xl" />
+              <img src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Guide" className="rounded-xl shadow-2xl w-full h-64 object-cover" />
+              <img src="https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Location guide" className="rounded-xl shadow-2xl mt-12 w-full h-64 object-cover" />
+              <img src="https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Investment" className="rounded-xl shadow-2xl -mt-12 w-full h-64 object-cover" />
+              <img src="https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Tips" className="rounded-xl shadow-2xl w-full h-64 object-cover" />
             </div>
           </div>
         </div>
@@ -388,10 +410,10 @@ function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <div className="grid grid-cols-2 gap-6">
-                      <img src="https://images.pexels.com/photos/50987/money-card-business-credit-card-50987.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Payment plan" className="rounded-xl shadow-2xl" />
-                      <img src="https://images.pexels.com/photos/164527/pexels-photo-164527.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Flexible payment" className="rounded-xl shadow-2xl mt-12" />
-                      <img src="https://images.pexels.com/photos/50987/money-card-business-credit-card-50987.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Easy payment" className="rounded-xl shadow-2xl" />
-                      <img src="https://images.pexels.com/photos/164527/pexels-photo-164527.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Flexible payment" className="rounded-xl shadow-2xl mt-12" />
+                <img src="https://images.pexels.com/photos/50987/money-card-business-credit-card-50987.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Payment plan" className="rounded-xl shadow-2xl w-full h-64 object-cover" />
+                <img src="https://images.pexels.com/photos/164527/pexels-photo-164527.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Flexible payment" className="rounded-xl shadow-2xl mt-12 w-full h-64 object-cover" />
+                <img src="https://images.pexels.com/photos/4386396/pexels-photo-4386396.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Easy payment" className="rounded-xl shadow-2xl w-full h-64 object-cover" />
+                <img src="https://images.pexels.com/photos/730547/pexels-photo-730547.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Installment" className="rounded-xl shadow-2xl mt-12 w-full h-64 object-cover" />
               </div>
             </div>
             <div className="order-1 lg:order-2">
@@ -404,7 +426,7 @@ function Home() {
               <ul className="space-y-4 text-lg">
                 <li className="flex items-center gap-3">
                   <CreditCard size={24} className="text-primary" />
-                  <span>Exclusive discount rates you won’t find elsewhere</span>
+                  <span>Exclusive discount rates you won't find elsewhere</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CreditCard size={24} className="text-primary" />
@@ -422,51 +444,6 @@ function Home() {
           </div>
         </div>
       </section>
-
-      {/* ================= NEW LOGIN SUGGESTION POPUP ================= */}
-      {showLoginPrompt && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <button
-              onClick={() => setShowLoginPrompt(false)}
-              className="absolute top-4 right-4 text-gray-600 hover:text-black"
-            >
-              <X size={28} />
-            </button>
-
-            <div className="text-center pt-4">
-              <LogIn size={48} className="mx-auto text-primary mb-4" />
-              <h3 className="text-2xl font-bold mb-3">Welcome to HomeMu</h3>
-              <p className="text-gray-600 mb-6">
-                Login or sign up to save properties, get alerts, book shortlets, and more.
-              </p>
-
-              <div className="flex flex-col gap-4">
-                <Link
-                  to="/login"
-                  className="bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90"
-                  onClick={() => setShowLoginPrompt(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="border border-primary text-primary py-3 rounded-lg font-semibold hover:bg-primary/10"
-                  onClick={() => setShowLoginPrompt(false)}
-                >
-                  Sign Up
-                </Link>
-                <button
-                  onClick={() => setShowLoginPrompt(false)}
-                  className="text-gray-500 hover:text-gray-700 mt-2"
-                >
-                  Continue browsing
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

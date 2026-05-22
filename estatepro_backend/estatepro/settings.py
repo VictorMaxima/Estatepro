@@ -27,23 +27,48 @@ SECRET_KEY = 'django-insecure-8l!nkir^hxbiau6gwc&c1@)t=149_wru3-ba+(t9_emxy^3l&x
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False  # CHANGE to False for security
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "https://localhost:3000",
+    "http://localhost:5173",  # Your React frontend
+    "http://localhost:3000",   # Alternative React port
 ]
+
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
     "PUT",
     "PATCH",
     "DELETE",
+    "OPTIONS",  # ADD OPTIONS method
 ]
+
 CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
     "x-csrftoken",
+    "accept",
+    "origin",
+    "user-agent",
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+# Also add this for CSRF
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+# Cookie settings - IMPORTANT
+SESSION_COOKIE_SAMESITE = 'Lax'  # For cross-origin
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -77,6 +102,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'Main.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -137,7 +163,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication'
+        'Main.views.CookieJWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
@@ -146,8 +173,13 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     "USER_ID_FIELD": "email",
     'ROTATE_REFRESH_TOKENS': True,
-    'UPDATE_LAST_LOGIN' : True
-
+    'UPDATE_LAST_LOGIN': True,  # Remove duplicate
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'AUTH_COOKIE_SECURE': False,  # CHANGE to False for local development
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_SAMESITE': 'Lax',
+    'AUTH_COOKIE_PATH': '/',  # ADD this
 }
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

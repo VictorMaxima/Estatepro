@@ -17,18 +17,27 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import AppUser, AgentApplication, ContactRequest, Property, PropertyImage
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.apps import apps
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.http import JsonResponse
+from django.views.decorators.clickjacking import xframe_options_exempt
 
 Wallet = apps.get_model("Payment", "Wallet")
 Transaction = apps.get_model("Payment", "Transaction")
 
-class OptionalJWTAuthentication(JWTAuthentication):
+
+class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
+        access_token = request.COOKIES.get('access_token')
+        if not access_token:
+            return None  # Fall through to other authenticators
+        
         try:
-            return super().authenticate(request)
-        except:
-            return None 
+            validated_token = self.get_validated_token(access_token)
+            return self.get_user(validated_token), validated_token
+        except Exception:
+            return None
 
 class UserBackend(BaseBackend):
     #user backend for authentication
@@ -49,38 +58,6 @@ class UserBackend(BaseBackend):
         except AppUser.DoesNotExist:
             return None
 
-class LoginView(APIView):
-    #login view to be used as api end point
-    @swagger_auto_schema(
-        request_body=LoginSerializer,
-        responses= {
-            200: openapi.Response(
-                description="Success",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties= {
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            )
-        }
-    )
-
-    def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
-        user = UserBackend.authenticate(request, email=email, password=password)
-
-        if user is not None:
-            login(request, user)
-            return Response({"message": "Logged in successfully"})
-        
-        return Response({"error": "Invalid credentials"})
-
-class LogoutView(APIView):
-    def post(self, request):
-        logout(request)
-        return Response({"message": "Logged out successfully"})
 
 class RegisterView(APIView):
 
@@ -127,24 +104,7 @@ class VerifyEmail(APIView):
         "redirect_url": "/home/"
     })
         
-class CustomTokenObtainPairView(TokenObtainPairView):
-    permission_classes = [permissions.AllowAny]
-    def post(self, request, *args, **kwargs):
-        user = UserBackend.authenticate(request, email=request.data['email'], password=request.data['password'])
-        if user is not None:
-            refresh_token = RefreshToken.for_user(user)
-            access_token = refresh_token.access_token
-            print(type(user))
-            return Response(
-                {
-                    'access_token': str(access_token),
-                    'refresh_token': str(refresh_token),
-                    'full_name': user.full_name,
-                    'user_id': user.id,
-                    'is_agent': user.agent_status
-                }
-            )
-        return Response({'error': 'Invalid credentials'})
+
 class ContactUsView(CreateAPIView):
     queryset = ContactRequest.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -163,7 +123,7 @@ class AgentApplyView(CreateAPIView):
     queryset = AgentApplication.objects.all()
     serializer_class = CreateAgentApplySerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     parser_classes = [MultiPartParser, FormParser]
     
 
@@ -176,7 +136,7 @@ class AgentApplyView(CreateAPIView):
 
 class AgentApplicationList(APIView):
     permission_classes = [permissions.IsAdminUser]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     def get(self, request):
         applications = AgentApplication.objects.all()
         serializer = ApplicationListSerializer(applications, many=True)
@@ -198,7 +158,7 @@ class AgentApprovalView(APIView):
 class CreatePropertyListingView(CreateAPIView):
     serializer_class = CreatePropertyListingSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
 
     def perform_create(self, serializer):
         agent = self.request.user
@@ -222,7 +182,7 @@ class CreatePropertyListingView(CreateAPIView):
 class CreatePropertyImageView(CreateAPIView):
     serializer_class = CreatePropertyImageSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
@@ -235,7 +195,7 @@ class CreatePropertyImageView(CreateAPIView):
 class ListAgentPropertiesView(APIView):
     serializer = ListAgentPropertySerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     def get(self, request):
         if not self.request.user.agent_status:
             raise ValidationError("Apply to be an agent first before trying to list a property")
@@ -254,7 +214,7 @@ class ListPropertiesView(APIView):
 class PropertyDetailView(APIView):
     serializer = PropertyDetailSerializer
     permission_classes = [permissions.AllowAny]
-    authentication_classes = [OptionalJWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     def get(self, request, id):
         property = get_object_or_404(Property, id=id)
         serializer = PropertyDetailSerializer(property)
@@ -270,7 +230,7 @@ class PropertyDetailView(APIView):
 
 class EditPropertyView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     
     @swagger_auto_schema(
         operation_description="Update a property listing",
@@ -364,7 +324,7 @@ class EditPropertyView(APIView):
 
 class DeletePropertyImageView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     
     @swagger_auto_schema(
         operation_description="Delete a property image",
@@ -399,6 +359,125 @@ class DeletePropertyImageView(APIView):
             {'message': 'Image deleted successfully'},
             status=status.HTTP_200_OK
         )
+
+@csrf_exempt
+@xframe_options_exempt
+def login_view(request):
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = JsonResponse({})
+        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
     
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
 
+        user = UserBackend.authenticate(request, email=data.get('email'), password=data.get('password'))
+        
+        if user:
+            refresh = RefreshToken.for_user(user)
+    
+            response = JsonResponse({
+                'message': 'Login successful',
+                'full_name': user.get_full_name() or user.email,
+                'user_id': user.id,
+                'email': user.email,
+                'is_agent': getattr(user, 'agent_status', False)  # Use getattr for safety
+            })
+            
+            response.set_cookie(
+                'access_token', 
+                str(refresh.access_token),
+                httponly=True,
+                secure=False,  # CHANGE to False for local development
+                samesite='Lax',
+                path='/',
+                max_age=5000 * 60  # 5000 minutes in seconds
+            )
+            
+            response.set_cookie(
+                'refresh_token',
+                str(refresh),
+                httponly=True,
+                secure=False,  # CHANGE to False for local development
+                samesite='Lax',
+                path='/',
+                max_age=86400  # 1 day in seconds
+            )
+            
+            # Add CORS headers
+            response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+            response['Access-Control-Allow-Credentials'] = 'true'
+            
+            return response
+        
+        return JsonResponse({'error': 'Invalid credentials'}, status=401)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"Login error: {str(e)}")  # For debugging
+        return JsonResponse({'error': 'Server error'}, status=500)
 
+@csrf_exempt
+def logout_view(request):
+    response = JsonResponse({'message': 'Logged out successfully'})
+    response.delete_cookie('access_token', path='/')
+    response.delete_cookie('refresh_token', path='/')
+    
+    # Add CORS headers
+    response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+    response['Access-Control-Allow-Credentials'] = 'true'
+    
+    return response
+
+# views.py
+@csrf_exempt
+def refresh_token_view(request):
+    if request.method == 'OPTIONS':
+        response = JsonResponse({})
+        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    # Get refresh token from cookie
+    refresh_token = request.COOKIES.get('refresh_token')
+    
+    if not refresh_token:
+        return JsonResponse({'error': 'No refresh token'}, status=401)
+    
+    try:
+        refresh = RefreshToken(refresh_token)
+        new_access_token = str(refresh.access_token)
+        
+        response = JsonResponse({'message': 'Token refreshed'})
+        
+        # Set new access token cookie
+        response.set_cookie(
+            'access_token',
+            new_access_token,
+            httponly=True,
+            secure=False,
+            samesite='Lax',
+            path='/',
+            max_age=5000 * 60
+        )
+        
+        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+        response['Access-Control-Allow-Credentials'] = 'true'
+        
+        return response
+        
+    except Exception as e:
+        return JsonResponse({'error': 'Invalid refresh token'}, status=401)

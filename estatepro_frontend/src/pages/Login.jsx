@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import API_URL from '@/config/api';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -11,7 +10,7 @@ function Login() {
   const [error, setError] = useState('');
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-  const { login } = useAuth();
+  const { login } = useAuth(); // Now uses cookie-based login
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -33,55 +32,25 @@ function Login() {
     }
 
     try {
-      const response = await fetch(`${API_URL}token/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
-      });
-
-      const data = await response.json();
-      console.log(data);
-      if (data.error === 'Invalid credentials') {
-          setPopupMessage('Invalid email or password. Please try again.');
-          setShowPopup(true);
-          throw new Error('Invalid credentials');
-      }
-
-      if (!response.ok) {
-        // Check for invalid credentials error
-        if (data.error === 'Invalid credentials') {
-          setPopupMessage('Invalid email or password. Please try again.');
-          setShowPopup(true);
-          throw new Error('Invalid credentials');
+      // Use the login function from AuthContext (now handles cookies)
+      const result = await login(email.trim(), password);
+      
+      if (result.success) {
+        // Redirect based on is_agent from context
+        if (result.user?.isAgent) {
+          navigate('/agent-dashboard');
+        } else {
+          navigate('/');
         }
-        throw new Error(data.detail || data.message || 'Login failed');
-      }
-
-      // Store tokens securely
-      localStorage.setItem('accessToken', data.access_token);
-      if (data.refresh) {
-        localStorage.setItem('refreshToken', data.refresh_token);
-      }
-
-      // Update auth context (extracts id + is_agent)
-      login(data);
-
-      // Redirect logic based on is_agent from backend
-      if (data.is_agent === true) {
-        navigate('/agent-dashboard');
       } else {
-        navigate('/');
+        // Handle login failure
+        setPopupMessage(result.error || 'Invalid email or password. Please try again.');
+        setShowPopup(true);
       }
-
     } catch (err) {
-      if (err.message !== 'Invalid credentials') {
-        setError(err.message || 'An error occurred during login');
-      }
+      console.error('Login error:', err);
+      setPopupMessage('An error occurred during login. Please try again.');
+      setShowPopup(true);
     } finally {
       setLoading(false);
     }
