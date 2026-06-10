@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API_URL from '@/config/api';
 import { BASE_URL } from '../config/Api';
+import { useAuth } from '../context/AuthContext';
 
 function AgentProperties() {
   const [properties, setProperties] = useState([]);
@@ -10,35 +11,18 @@ function AgentProperties() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('accessToken');
+  const { api, user, logout } = useAuth();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-    }
-  }, [token, navigate]);
-
-  useEffect(() => {
+   useEffect(() => {
     const fetchProperties = async () => {
-      if (!token) return;
 
       setLoading(true);
       setError('');
 
       try {
-        const response = await fetch(`${API_URL}agent/properties`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await api.get('/agent/properties')
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || data.message || 'Failed to load your properties');
-        }
+        const data = response.data;
 
         setProperties(data); 
       } catch (err) {
@@ -49,7 +33,7 @@ function AgentProperties() {
     };
 
     fetchProperties();
-  }, [token]);
+  }, [api, logout]);
 
   return (
     <div className="min-h-screen bg-bg-soft py-12 px-4">
@@ -122,7 +106,7 @@ function AgentProperties() {
                     <p><strong>Location:</strong> {property.location}</p>
                     <p><strong>Type:</strong> {property.property_type || property.type}</p>
                     <p><strong>Size:</strong> {property.size} sqm</p>
-                    <p><strong>Rooms:</strong> {property.bedrooms || 0} bed • {property.bathrooms || 0} bath</p>
+                    <p><strong>Rooms:</strong> {property.no_of_bedrooms || 0} bed • {property.no_of_bathrooms || 0} bath</p>
                   </div>
 
                   <div className="flex gap-4">
@@ -133,8 +117,12 @@ function AgentProperties() {
                       View Details
                     </Link>
                     <Link to={`/edit-property/${property.id}`} className="flex-1 text-center py-3 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition">
-  Edit Property
+              Edit Property
                     </Link>
+                    <Link to={`/agent/properties/${property.id}/delete`} className="text-red-500 text-center py-3 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition"
+  >
+    Delete
+  </Link>
                   </div>
                 </div>
               </div>

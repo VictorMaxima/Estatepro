@@ -5,7 +5,7 @@ from .views import (
     RegisterView, VerifyEmail, AgentApplyView, refresh_token_view,
     ContactUsView, AgentApplicationList, AgentApprovalView, CreatePropertyListingView, CreatePropertyImageView,
     ListAgentPropertiesView, ListPropertiesView, PropertyDetailView, EditPropertyView, DeletePropertyImageView,
-    login_view, logout_view)
+    login_view, logout_view, DeletePropertyView)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authtoken import views
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/properties/detail/<int:id>', PropertyDetailView.as_view(), name='property_detail'),
     path('api/agent/properties/<int:property_id>', EditPropertyView.as_view(), name='edit-property'),
     path('api/property/images/<int:image_id>', DeletePropertyImageView.as_view(), name='delete-property-image'),
+    path('api/property/<int:property_id>/delete', DeletePropertyView.as_view(), name='delete_property')
 ]
 
 

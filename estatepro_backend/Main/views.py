@@ -22,6 +22,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.http import JsonResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.db import transaction
+from django.utils.decorators import method_decorator
 
 Wallet = apps.get_model("Payment", "Wallet")
 Transaction = apps.get_model("Payment", "Transaction")
@@ -385,7 +389,7 @@ def login_view(request):
     
             response = JsonResponse({
                 'message': 'Login successful',
-                'full_name': user.get_full_name() or user.email,
+                'full_name': user.full_name,
                 'user_id': user.id,
                 'email': user.email,
                 'is_agent': getattr(user, 'agent_status', False)  # Use getattr for safety
@@ -481,3 +485,68 @@ def refresh_token_view(request):
         
     except Exception as e:
         return JsonResponse({'error': 'Invalid refresh token'}, status=401)
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class DeletePropertyView(APIView):
+    """
+    Delete a property and all associated data
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+    
+    def delete(self, request, property_id):
+        """
+        Delete property by ID
+        """
+        try:
+            # Get the property and ensure it belongs to the authenticated user
+            property_obj = get_object_or_404(
+                Property, 
+                id=property_id,
+                agent=request.user  # Ensure user owns this property
+            )
+            
+            # Store property title for response message
+            property_title = property_obj.title
+            
+            # Delete all associated files and database records
+            with transaction.atomic():
+                # Delete all associated photos and their files
+                photos = PropertyImage.objects.filter(property=property_obj)
+                for photo in photos:
+                    # Delete the actual image file from storage
+                    if photo.image:
+                        if default_storage.exists(photo.image.path):
+                            default_storage.delete(photo.image.path)
+                    photo.delete()
+                              
+                # Delete the property itself
+                property_obj.delete()
+            
+            return Response(
+                {
+                    "success": True,
+                    "message": f"Property '{property_title}' has been deleted successfully",
+                    "deleted_property_id": property_id
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Property.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Property not found",
+                    "message": "The requested property does not exist"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Deletion failed",
+                    "message": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

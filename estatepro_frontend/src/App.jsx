@@ -27,6 +27,7 @@ import AgentProperties from './pages/AgentProperties';
 import EditProperty from './pages/EditProperties';
 import Wallets from './pages/Wallet';
 import Checkout from './pages/Checkout';
+import DeleteProperty from './pages/DeleteProperty';
 
 function App() {
   const { user, isAuthenticated, isAgent } = useAuth();
@@ -75,6 +76,9 @@ function App() {
                 <Navigate to="/login" replace />
             } 
           />
+
+// Add this route
+          <Route path="/agent/properties/:propertyId/delete" element={<DeleteProperty />} />
           <Route
             path="/list-property"
             element={

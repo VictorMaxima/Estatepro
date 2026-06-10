@@ -3,6 +3,22 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import API_URL from '@/config/api';
 
+// Helper function to get CSRF token from cookies
+const getCSRFToken = () => {
+  const name = 'csrftoken';
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+};
 
 const api = axios.create({
   baseURL: API_URL,
@@ -12,25 +28,65 @@ const api = axios.create({
   },
 });
 
-// Response interceptor for handling token refresh
+// Request interceptor to add CSRF token to all requests
+api.interceptors.request.use(
+  (config) => {
+    // Add CSRF token for non-GET requests
+    if (config.method !== 'get') {
+      const csrfToken = getCSRFToken();
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling token refresh and CSRF errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     
-    // If 401 and not already retrying
+    // Handle CSRF errors
+    if (error.response?.status === 403 && 
+        error.response?.data?.detail === 'CSRF Failed: CSRF token missing or incorrect' &&
+        !originalRequest._retry) {
+      
+      originalRequest._retry = true;
+      
+      try {
+        // Get a new CSRF token
+        await api.get('/get-csrf-token/');
+        
+        // Retry the original request with new token
+        const csrfToken = getCSRFToken();
+        if (csrfToken) {
+          originalRequest.headers['X-CSRFToken'] = csrfToken;
+        }
+        return api(originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    // Handle 401 authentication errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
-        // Attempt to refresh - cookies are sent automatically
+        // Attempt to refresh session - cookies are sent automatically
         await api.post('/token/refresh/');
         
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed - redirect to login
-        localStorage.removeItem('homemuUser'); // Clear user data
+        localStorage.removeItem('homemuUser');
+        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
@@ -46,18 +102,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on app load
-    const savedUser = localStorage.getItem('homemuUser');
-    if (savedUser) {
+    // Fetch CSRF token on app load
+    const initializeApp = async () => {
       try {
-        const parsed = JSON.parse(savedUser);
-        setUser(parsed);
-      } catch (e) {
-        console.error('Failed to parse saved user data:', e);
-        localStorage.removeItem('homemuUser');
+        await api.get('/get-csrf-token/');
+      } catch (error) {
+        console.error('Failed to get CSRF token:', error);
       }
-    }
-    setLoading(false);
+      
+      // Check for existing session on app load
+      const savedUser = localStorage.getItem('homemuUser');
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          setUser(parsed);
+        } catch (e) {
+          console.error('Failed to parse saved user data:', e);
+          localStorage.removeItem('homemuUser');
+        }
+      }
+      setLoading(false);
+    };
+    
+    initializeApp();
   }, []);
 
   const login = async (email, password) => {
@@ -68,7 +135,8 @@ export function AuthProvider({ children }) {
       // We only store non-sensitive user info in localStorage
       const userInfo = {
         id: response.data.user_id,
-        name: response.data.full_name || response.data.user.username,
+        name: response.data.full_name || response.data.user?.username,
+        email: email,
         isAgent: response.data.is_agent || false,
       };
 
@@ -96,9 +164,9 @@ export function AuthProvider({ children }) {
       });
       
       const newUser = {
-        id: response.data.user.id,
-        email: response.data.user.email,
-        name: response.data.user.first_name || userData.name,
+        id: response.data.user_id,
+        email: response.data.email,
+        name: response.data.full_name || userData.name,
         profilePic: null,
         isAgent: false,
       };

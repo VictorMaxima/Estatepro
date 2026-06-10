@@ -22,11 +22,11 @@ export default function ProfileDropdown() {
   const avatarUrl =
     user.profilePic ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      user.name || user.email.split('@')[0] || 'User'
+      user.full_name || user.email.split('@')[0] || 'User'
     )}&background=6D28D9&color=fff&rounded=true&size=128`;
 
   const displayName =
-  user.name?.split(' ')[0] ||               // preferred: first name
+  user.full_name?.split(' ')[0] ||               // preferred: first name
   user.name ||                              // full name if no split
   (user.email ? user.email.split('@')[0] : 'User') ||  // email prefix e.g. "victoria"
   'User';

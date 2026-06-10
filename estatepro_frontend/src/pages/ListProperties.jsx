@@ -2,23 +2,24 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API_URL from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function ListProperty() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const { api, user, logout } = useAuth();
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
     location: '',
-    property_type: 'sale', // Changed to match backend enum
+    property_type: 'sale',
     size: '',
     no_of_bedrooms: '',
     no_of_bathrooms: '',
-    // Amenities as separate boolean fields
     swimming_pool: false,
     parking: false,
     air_conditioning: false,
@@ -35,7 +36,6 @@ function ListProperty() {
   const [photos, setPhotos] = useState([]); 
   const [photoPreviews, setPhotoPreviews] = useState([]); 
 
-  // Property types matching backend enum: [sale, rent, lease, shortLet, land]
   const propertyTypes = [
     { value: 'sale', label: 'For Sale' },
     { value: 'rent', label: 'For Rent' },
@@ -44,26 +44,9 @@ function ListProperty() {
     { value: 'land', label: 'Land' },
   ];
 
-  const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
-  if (!token) {
-    return (
-      <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
-        <div className="text-center bg-white rounded-2xl shadow-card p-12 max-w-md">
-          <h1 className="text-4xl font-bold text-text-primary mb-6">
-            Login Required
-          </h1>
-          <p className="text-xl text-text-muted mb-8">
-            Please log in to list properties.
-          </p>
-          <Link to="/login" className="btn-primary py-4 px-8 inline-block">
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  
 
   const handleNext = () => setStep(step + 1);
   const handlePrev = () => setStep(step - 1);
@@ -105,7 +88,7 @@ function ListProperty() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Validation (keep all your existing validation)
     if (photos.length === 0) {
       setError('Please upload at least one photo');
       return;
@@ -155,57 +138,45 @@ function ListProperty() {
     setSuccess(false);
 
     try {
-      // Prepare data matching backend model
       const propertyData = {
-  title: formData.title.trim(),
-  description: formData.description.trim(),
-  location: formData.location.trim(),
-  price: Number(formData.price),  // Convert to number, not string
-  property_type: formData.property_type,
-  size: Number(formData.size),
-  no_of_bedrooms: Number(formData.no_of_bedrooms),
-  no_of_bathrooms: Number(formData.no_of_bathrooms),
-  swimming_pool: Boolean(formData.swimming_pool),
-  parking: Boolean(formData.parking),
-  air_conditioning: Boolean(formData.air_conditioning),
-  borehole: Boolean(formData.borehole),
-  gym: Boolean(formData.gym),
-  garden: Boolean(formData.garden),
-  wifi: Boolean(formData.wifi),
-  furnished: Boolean(formData.furnished),
-  balcony: Boolean(formData.balcony),
-  generator: Boolean(formData.generator),
-  serviced: Boolean(formData.serviced),
-};
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        location: formData.location.trim(),
+        price: Number(formData.price),
+        property_type: formData.property_type,
+        size: Number(formData.size),
+        no_of_bedrooms: Number(formData.no_of_bedrooms),
+        no_of_bathrooms: Number(formData.no_of_bathrooms),
+        swimming_pool: Boolean(formData.swimming_pool),
+        parking: Boolean(formData.parking),
+        air_conditioning: Boolean(formData.air_conditioning),
+        borehole: Boolean(formData.borehole),
+        gym: Boolean(formData.gym),
+        garden: Boolean(formData.garden),
+        wifi: Boolean(formData.wifi),
+        furnished: Boolean(formData.furnished),
+        balcony: Boolean(formData.balcony),
+        generator: Boolean(formData.generator),
+        serviced: Boolean(formData.serviced),
+      };
 
       console.log('Submitting property data:', propertyData);
 
-      const propertyResponse = await fetch(`${API_URL}agent/properties/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(propertyData),
-      });
+      // FIX 1: Use api.post() correctly - with HttpOnly cookies, we DON'T manually add Authorization header
+      // The browser automatically sends the HttpOnly cookie with the request
+      const propertyResponse = await api.post('agent/properties/add', propertyData);
 
-      const propertyResponseData = await propertyResponse.json();
+      // FIX 2: api.post() should already return the parsed JSON response
+      const propertyResponseData = propertyResponse.data;
+      console.log(propertyResponseData)
 
-      if (!propertyResponse.ok) {
-        // Handle validation errors from backend
-        if (propertyResponseData.detail) {
-          throw new Error(propertyResponseData.detail);
-        }
-        if (propertyResponseData.errors) {
-          const errorMessages = Object.values(propertyResponseData.errors).flat().join(', ');
-          throw new Error(errorMessages);
-        }
-        throw new Error(propertyResponseData.message || 'Failed to create property');
+      if (!propertyResponseData || propertyResponseData.error) {
+        throw new Error(propertyResponseData?.message || 'Failed to create property');
       }
 
       const propertyId = propertyResponseData.property_id;
 
-      // Upload photos one by one
+      // Upload photos one by one using fetch with credentials: 'include'
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
         const photoFormData = new FormData();
@@ -213,21 +184,20 @@ function ListProperty() {
 
         console.log(`Uploading photo ${i + 1}/${photos.length}`);
 
+        // FIX 3: When using fetch directly, include credentials to send HttpOnly cookie
         const imageResponse = await fetch(`${API_URL}property/${propertyId}/add_image`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+          credentials: 'include', // CRITICAL: This sends the HttpOnly cookie
           body: photoFormData,
+          // NO Authorization header needed!
         });
 
         if (!imageResponse.ok) {
-          const imgError = await imageResponse.json();
+          const imgError = await imageResponse.json().catch(() => ({}));
           throw new Error(`Failed to upload photo ${i + 1}: ${imgError.detail || 'Unknown error'}`);
         }
       }
 
-      // All done!
       setSuccess(true);
       setTimeout(() => {
         navigate('/agent/properties');
@@ -241,13 +211,13 @@ function ListProperty() {
     }
   };
 
-  // Helper function to get property type label
   const getPropertyTypeLabel = (value) => {
     const type = propertyTypes.find(t => t.value === value);
     return type ? type.label : value;
   };
 
   return (
+    // ... rest of your JSX remains exactly the same ...
     <div className="min-h-screen bg-bg-soft py-12">
       <div className="max-w-5xl mx-auto px-4">
         <h1 className="text-5xl font-bold text-text-primary text-center mb-8">
