@@ -1,34 +1,22 @@
 // src/pages/PropertyDetails.jsx
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { API_URL, BASE_URL } from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function PropertyDetails() {
   const { id } = useParams();
+  const { api, isAuthenticated } = useAuth();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-    
-    return `${cleanBaseUrl}/${cleanPath}`;
-  };
 
   // Get all images
   const getAllImages = () => {
     if (!property?.images || property.images.length === 0) {
       return [];
     }
-    return property.images.map(img => getFullImageUrl(img.image_url));
+    return property.images.map(img => img.image_url);
   };
 
   const images = getAllImages();
@@ -45,23 +33,15 @@ function PropertyDetails() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await fetch(`${API_URL}properties/detail/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || data.message || 'Property not found');
-        }
-
-        setProperty(data);
+        setLoading(true);
+        // Using axios instance from useAuth - no need for manual token
+        const response = await api.get(`/properties/detail/${id}`);
+        setProperty(response.data);
+        setError('');
       } catch (err) {
         console.error('Error fetching property:', err);
-        setError(err.message || 'Failed to load property details');
+        setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to load property details');
+        setProperty(null);
       } finally {
         setLoading(false);
       }
@@ -73,7 +53,7 @@ function PropertyDetails() {
       setError('No property id provided');
       setLoading(false);
     }
-  }, [id]);
+  }, [id, api]);
 
   if (loading) {
     return (
@@ -90,6 +70,7 @@ function PropertyDetails() {
     return (
       <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
         <div className="text-center bg-white rounded-2xl shadow-card p-12 max-w-md">
+          <div className="text-6xl mb-4">🔍</div>
           <h1 className="text-5xl font-bold text-text-primary mb-4">Property Not Found</h1>
           <p className="text-xl text-text-muted mb-8">{error || 'Invalid property id'}</p>
           <Link to="/properties" className="text-primary text-lg hover:underline">
@@ -260,7 +241,7 @@ function PropertyDetails() {
               {/* Proceed to Checkout Button */}
               <div className="mt-12">
                 <Link
-                  to={`/checkout/${id}`}
+                  to={`/checkout/${property.id}`}
                   className="block w-full bg-primary text-white text-center py-5 rounded-xl font-bold text-xl hover:bg-primary-dark transition"
                 >
                   Proceed to Checkout
@@ -298,19 +279,28 @@ function PropertyDetails() {
                 </button>
 
                 <a
-                  href={`tel:${property.agent?.phone_number}`}
+                  href={`tel:${property.agent?.phone_number || '+2348030000000'}`}
                   className="block w-full border border-border-light text-text-primary py-4 rounded-xl text-center hover:bg-bg-soft transition text-lg"
                 >
                   Call: {property.agent?.phone_number || '+234 803 000 0000'}
                 </a>
 
                 <a
-                  href={`mailto:${property.agent?.email}`}
+                  href={`mailto:${property.agent?.email || 'info@homemu.com'}`}
                   className="block w-full border border-border-light text-text-primary py-4 rounded-xl text-center hover:bg-bg-soft transition text-lg"
                 >
                   Email Agent
                 </a>
               </div>
+
+              {/* Login prompt for unauthenticated users */}
+              {!isAuthenticated && (
+                <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800 text-center">
+                    🔐 <Link to="/login" className="font-semibold underline">Login</Link> to contact the agent directly
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

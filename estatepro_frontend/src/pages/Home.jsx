@@ -1,6 +1,7 @@
 // src/pages/Home.jsx
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   House,
   Store,
@@ -20,6 +21,7 @@ import SearchBar from '../components/common/SearchBar';
 import PropertyCard from '../components/common/PropertyCard';
 
 function Home() {
+  const { api } = useAuth();
   const [properties, setProperties] = useState([]);
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,19 +31,16 @@ function Home() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/';
-        const response = await fetch(`${apiUrl}properties`);
+        setLoading(true);
+        const response = await api.get('/properties');
+        const data = response.data;
         
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
         setProperties(data || []);
         setFilteredProperties(data || []);
+        setError('');
       } catch (err) {
         console.error('Fetch error:', err);
-        setError(err.message || 'Could not load properties. Please try again.');
+        setError(err.response?.data?.message || 'Could not load properties. Please try again.');
         setProperties([]);
         setFilteredProperties([]);
       } finally {
@@ -50,7 +49,7 @@ function Home() {
     };
     
     fetchProperties();
-  }, []);
+  }, [api]);
 
   const services = [
     { name: 'Rent Apartment', path: '/rent', icon: House },
@@ -214,7 +213,7 @@ function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {displayProperties.length > 0 ? (
               displayProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={property.id || property.slug} property={property} />
               ))
             ) : (
               <div className="col-span-3 text-center text-text-muted py-12">

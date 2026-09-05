@@ -1,10 +1,13 @@
 // src/pages/EditProperty.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { API_URL, BASE_URL } from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function EditProperty() {
   const { id } = useParams();
+  const { api, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [success, setSuccess] = useState(false);
@@ -46,35 +49,18 @@ function EditProperty() {
     { value: 'land', label: 'Land' },
   ];
 
-  const token = localStorage.getItem('accessToken');
-  const navigate = useNavigate();
-
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-    return `${cleanBaseUrl}/${cleanPath}`;
-  };
-
   // Fetch property data
   useEffect(() => {
     const fetchProperty = async () => {
+      if (!isAuthenticated) {
+        setError('Please log in to edit properties');
+        setFetching(false);
+        return;
+      }
+
       try {
-        const response = await fetch(`${API_URL}properties/detail/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || data.message || 'Property not found');
-        }
+        const response = await api.get(`/properties/detail/${id}`);
+        const data = response.data;
 
         // Populate form with existing data
         setFormData({
@@ -103,31 +89,33 @@ function EditProperty() {
         if (data.images && data.images.length > 0) {
           setExistingPhotos(data.images.map(img => ({
             id: img.id,
-            url: getFullImageUrl(img.image_url),
+            url: img.image_url,
             image_url: img.image_url
           })));
         }
 
       } catch (err) {
         console.error('Error fetching property:', err);
-        setError(err.message || 'Failed to load property details');
+        setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to load property details');
       } finally {
         setFetching(false);
       }
     };
 
-    if (id && token) {
+    if (id) {
       fetchProperty();
     } else {
       setFetching(false);
-      if (!token) setError('Please log in to edit properties');
+      setError('Property ID not found');
     }
-  }, [id, token]);
+  }, [id, api, isAuthenticated]);
 
-  if (!token) {
+  // Check authentication
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">
         <div className="text-center bg-white rounded-2xl shadow-card p-12 max-w-md">
+          <div className="text-6xl mb-4">🔐</div>
           <h1 className="text-4xl font-bold text-text-primary mb-6">Login Required</h1>
           <p className="text-xl text-text-muted mb-8">Please log in to edit properties.</p>
           <Link to="/login" className="btn-primary py-4 px-8 inline-block">Go to Login</Link>
@@ -262,37 +250,15 @@ function EditProperty() {
 
       console.log('Updating property data:', propertyData);
 
-      const updateResponse = await fetch(`${API_URL}agent/properties/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(propertyData),
-      });
-
-      const updateData = await updateResponse.json();
-
-      if (!updateResponse.ok) {
-        if (updateData.detail) throw new Error(updateData.detail);
-        if (updateData.errors) {
-          const errorMessages = Object.values(updateData.errors).flat().join(', ');
-          throw new Error(errorMessages);
-        }
-        throw new Error(updateData.message || 'Failed to update property');
-      }
+      // Update property using axios
+      const updateResponse = await api.put(`/agent/properties/${id}`, propertyData);
 
       // Delete removed photos
       for (const photoId of photosToDelete) {
-        const deleteResponse = await fetch(`${API_URL}property/images/${photoId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!deleteResponse.ok) {
-          console.error(`Failed to delete photo ${photoId}`);
+        try {
+          await api.delete(`/property/images/${photoId}`);
+        } catch (err) {
+          console.error(`Failed to delete photo ${photoId}:`, err);
         }
       }
 
@@ -302,18 +268,11 @@ function EditProperty() {
         const photoFormData = new FormData();
         photoFormData.append('image', photo);
 
-        const imageResponse = await fetch(`${API_URL}property/${id}/add_image`, {
-          method: 'POST',
+        await api.post(`/property/${id}/add_image`, photoFormData, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
           },
-          body: photoFormData,
         });
-
-        if (!imageResponse.ok) {
-          const imgError = await imageResponse.json();
-          throw new Error(`Failed to upload photo ${i + 1}: ${imgError.detail || 'Unknown error'}`);
-        }
       }
 
       setSuccess(true);
@@ -323,7 +282,7 @@ function EditProperty() {
 
     } catch (err) {
       console.error('Error:', err);
-      setError(err.message || 'An error occurred while updating the property');
+      setError(err.response?.data?.detail || err.response?.data?.message || 'An error occurred while updating the property');
     } finally {
       setLoading(false);
     }
@@ -369,6 +328,7 @@ function EditProperty() {
 
         {success ? (
           <div className="bg-green-100 border border-green-400 text-green-700 px-8 py-12 rounded-2xl text-center">
+            <div className="text-6xl mb-4">✅</div>
             <h2 className="text-3xl font-bold mb-4">Property Updated Successfully!</h2>
             <p className="text-xl mb-8">Your property changes have been saved. Redirecting...</p>
             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-700 mx-auto"></div>

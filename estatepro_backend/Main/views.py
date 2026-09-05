@@ -18,7 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import AppUser, AgentApplication, ContactRequest, Property, PropertyImage
 from django.apps import apps
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 import json
 from django.http import JsonResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -26,6 +26,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.decorators import method_decorator
+from django.middleware.csrf import get_token
 
 Wallet = apps.get_model("Payment", "Wallet")
 Transaction = apps.get_model("Payment", "Transaction")
@@ -550,3 +551,11 @@ class DeletePropertyView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+@ensure_csrf_cookie
+@csrf_exempt
+def csrf_token(request):
+    return JsonResponse({'csrf_token': get_token(request)})
+
+def index(request):
+    return render(request, "Main/index.html")

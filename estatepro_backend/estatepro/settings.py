@@ -27,12 +27,13 @@ SECRET_KEY = 'django-insecure-8l!nkir^hxbiau6gwc&c1@)t=149_wru3-ba+(t9_emxy^3l&x
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-CORS_ALLOW_ALL_ORIGINS = False  # CHANGE to False for security
+CORS_ALLOW_ALL_ORIGINS = True  # CHANGE to False for security
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Your React frontend
-    "http://localhost:3000",   # Alternative React port
+    "http://localhost:3000",
+    "https://wg5wq9tt-5173.uks1.devtunnels.ms/"   # Alternative React port
 ]
 
 CORS_ALLOW_METHODS = [
@@ -222,3 +223,6 @@ SWAGGER_SETTINGS = {
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+STATIC_URL = 'static/'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
