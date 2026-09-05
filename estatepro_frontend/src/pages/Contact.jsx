@@ -1,12 +1,15 @@
 // src/pages/Contact.jsx
 import { useState } from 'react';
 import API_URL from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function Contact() {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -31,6 +34,12 @@ function Contact() {
       setError('Please enter your message');
       return false;
     }
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError('Please enter a valid email address');
+      return false;
+    }
     setError('');
     return true;
   };
@@ -42,18 +51,21 @@ function Contact() {
 
     setLoading(true);
     setSuccess(false);
+    setError('');
 
     try {
       const response = await fetch(`${API_URL}contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
         },
         body: JSON.stringify({
           name: formData.name.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim() || null,
           message: formData.message.trim(),
+          user_id: user?.id || null,
         }),
       });
 
@@ -64,7 +76,12 @@ function Contact() {
       }
 
       setSuccess(true);
-      setFormData({ name: '', email: '', phone: '', message: '' }); // Clear form
+      setFormData({ 
+        name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '', 
+        email: user?.email || '', 
+        phone: user?.phone || '', 
+        message: '' 
+      }); // Reset form but keep user info
 
     } catch (err) {
       setError(err.message || 'An error occurred. Please try again later.');
@@ -109,44 +126,68 @@ function Contact() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Your Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-                />
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-text-primary mb-2">
+                    Name *
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    placeholder="Your Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email Address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-                />
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="Phone Number (optional)"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-                />
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-text-primary mb-2">
+                    Phone Number (optional)
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone Number (optional)"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-                <textarea
-                  name="message"
-                  placeholder="Your Message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  rows="6"
-                  required
-                  className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-                />
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-text-primary mb-2">
+                    Message *
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    placeholder="Your Message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    rows="6"
+                    required
+                    className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
                 <button
                   type="submit"
