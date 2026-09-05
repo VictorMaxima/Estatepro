@@ -13,7 +13,7 @@ env/
 *.log
 *.pot
 *.sqlite3
-media/
+
 staticfiles/
 
 # Node.js / Frontend builds
