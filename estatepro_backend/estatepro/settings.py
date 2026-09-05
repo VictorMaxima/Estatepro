@@ -75,7 +75,7 @@ CSRF_COOKIE_SECURE = False
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 AUTH_USER_MODEL = 'Main.AppUser'
-ALLOWED_HOSTS = ['127.0.0.1', 'victormaxima.pythonanywhere.com', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'maximavictor.pythonanywhere.com', 'localhost']
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'Main.views.UserBackend']
