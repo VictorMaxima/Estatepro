@@ -3,15 +3,13 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import API_URL from '@/config/api';
 
-// Helper function to get CSRF token from cookies
 const getCSRFToken = () => {
   const name = 'csrftoken';
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+    for (const raw of document.cookie.split(';')) {
+      const cookie = raw.trim();
+      if (cookie.startsWith(name + '=')) {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
       }
@@ -22,75 +20,89 @@ const getCSRFToken = () => {
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // 🔑 This sends cookies automatically
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor to add CSRF token to all requests
-api.interceptors.request.use(
-  (config) => {
-    // Add CSRF token for non-GET requests
-    if (config.method !== 'get') {
-      const csrfToken = getCSRFToken();
-      if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+api.interceptors.request.use((config) => {
+  if (config.method !== 'get') {
+    const csrfToken = getCSRFToken();
+    if (csrfToken) config.headers['X-CSRFToken'] = csrfToken;
   }
-);
+  return config;
+}, (error) => Promise.reject(error));
 
-// Response interceptor for handling token refresh and CSRF errors
+// Endpoints that must NEVER trigger the refresh logic
+const AUTH_ENDPOINTS = ['/token/', '/token/refresh/', '/logout/', '/register/'];
+const isAuthEndpoint = (url = '') => AUTH_ENDPOINTS.some((p) => url.includes(p));
+
+// Single-flight refresh promise — all concurrent 401s await the same call
+let refreshPromise = null;
+
+const performRefresh = () => {
+  if (!refreshPromise) {
+    refreshPromise = api.post('/token/refresh/').finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
+let redirecting = false;
+const forceLogout = () => {
+  localStorage.removeItem('homemuUser');
+  if (!redirecting) {
+    redirecting = true;
+    window.location.href = '/login';
+  }
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle CSRF errors
-    if (error.response?.status === 403 && 
-        error.response?.data?.detail === 'CSRF Failed: CSRF token missing or incorrect' &&
-        !originalRequest._retry) {
-      
+    const originalRequest = error.config || {};
+    const status = error.response?.status;
+    const url = originalRequest.url || '';
+
+    // 1. Don't touch auth endpoints — let their 401s bubble up as-is
+    if (isAuthEndpoint(url)) {
+      return Promise.reject(error);
+    }
+
+    // 2. CSRF failure — refresh token, retry once
+    if (
+      status === 403 &&
+      error.response?.data?.detail === 'CSRF Failed: CSRF token missing or incorrect' &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
-      
       try {
-        // Get a new CSRF token
         await api.get('/get-csrf-token/');
-        
-        // Retry the original request with new token
         const csrfToken = getCSRFToken();
-        if (csrfToken) {
-          originalRequest.headers['X-CSRFToken'] = csrfToken;
-        }
+        if (csrfToken) originalRequest.headers['X-CSRFToken'] = csrfToken;
         return api(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
+      } catch (csrfError) {
+        return Promise.reject(csrfError);
       }
     }
-    
-    // Handle 401 authentication errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
+
+    // 3. 401 — try ONE refresh, then retry once
+    if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
       try {
-        // Attempt to refresh session - cookies are sent automatically
-        await api.post('/token/refresh/');
-        
-        // Retry the original request
+        await performRefresh();
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - redirect to login
-        localStorage.removeItem('homemuUser');
-        window.location.href = '/login';
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
-    
+
+    // 4. Any other 401 (already retried) → logout
+    if (status === 401) {
+      forceLogout();
+    }
+
     return Promise.reject(error);
   }
 );
@@ -102,20 +114,19 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch CSRF token on app load
     const initializeApp = async () => {
       try {
         await api.get('/get-csrf-token/');
       } catch (error) {
         console.error('Failed to get CSRF token:', error);
       }
-      
-      // Check for existing session on app load
+
       const savedUser = localStorage.getItem('homemuUser');
       if (savedUser) {
         try {
-          const parsed = JSON.parse(savedUser);
-          setUser(parsed);
+          setUser(JSON.parse(savedUser));
+          // Optional: verify the session is still alive
+          // await api.get('/me/');  // uncomment if you have such an endpoint
         } catch (e) {
           console.error('Failed to parse saved user data:', e);
           localStorage.removeItem('homemuUser');
@@ -123,32 +134,25 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     };
-    
     initializeApp();
   }, []);
 
   const login = async (email, password) => {
     try {
       const response = await api.post('/token/', { email, password });
-      
-      // Tokens are automatically stored in HttpOnly cookies by the server
-      // We only store non-sensitive user info in localStorage
       const userInfo = {
         id: response.data.user_id,
-        name: response.data.full_name || response.data.user?.username,
-        email: email,
+        name: response.data.full_name,
+        email,
         isAgent: response.data.is_agent || false,
       };
-
       localStorage.setItem('homemuUser', JSON.stringify(userInfo));
       setUser(userInfo);
-      
       return { success: true, user: userInfo };
     } catch (error) {
-      console.error('Login failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Login failed' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Login failed',
       };
     }
   };
@@ -160,26 +164,20 @@ export function AuthProvider({ children }) {
         username: userData.email,
         password: userData.password,
         first_name: userData.name,
-        // Add other fields as needed
       });
-      
       const newUser = {
         id: response.data.user_id,
         email: response.data.email,
         name: response.data.full_name || userData.name,
-        profilePic: null,
         isAgent: false,
       };
-
       localStorage.setItem('homemuUser', JSON.stringify(newUser));
       setUser(newUser);
-      
       return { success: true, user: newUser };
     } catch (error) {
-      console.error('Signup failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Signup failed' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Signup failed',
       };
     }
   };
@@ -193,12 +191,10 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      // Call logout endpoint to clear cookies on server
       await api.post('/logout/');
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Always clear local storage regardless of API response
       localStorage.removeItem('homemuUser');
       setUser(null);
     }
@@ -213,7 +209,7 @@ export function AuthProvider({ children }) {
     signup,
     updateUser,
     logout,
-    api, // Export for making authenticated requests
+    api,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -221,8 +217,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

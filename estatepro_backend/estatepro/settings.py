@@ -26,14 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-8l!nkir^hxbiau6gwc&c1@)t=149_wru3-ba+(t9_emxy^3l&x'
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-CORS_ALLOW_ALL_ORIGINS = True  # CHANGE to False for security
+# Allow the configured frontend origins to use credentialed cookies
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Your React frontend
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
-    "https://wg5wq9tt-5173.uks1.devtunnels.ms/"   # Alternative React port
+    "https://wg5wq9tt-5173.uks1.devtunnels.ms",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -42,7 +43,7 @@ CORS_ALLOW_METHODS = [
     "PUT",
     "PATCH",
     "DELETE",
-    "OPTIONS",  # ADD OPTIONS method
+    "OPTIONS",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -54,12 +55,6 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
-# Also add this for CSRF
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -103,7 +98,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'Main.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

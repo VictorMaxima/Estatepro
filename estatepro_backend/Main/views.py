@@ -36,12 +36,14 @@ class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
         access_token = request.COOKIES.get('access_token')
         if not access_token:
-            return None  # Fall through to other authenticators
-        
+            print("AUTH: no access_token cookie on request")
+            return None
+        print("cookie found")
         try:
             validated_token = self.get_validated_token(access_token)
             return self.get_user(validated_token), validated_token
-        except Exception:
+        except Exception as e:
+            print("AUTH FAILED:", repr(e))
             return None
 
 class UserBackend(BaseBackend):
@@ -55,7 +57,7 @@ class UserBackend(BaseBackend):
         except AppUser.DoesNotExist:
             print(AppUser.objects) #for debugging
             return None
-  
+
 
     def get_user(self, client_id):
         try:
@@ -108,7 +110,7 @@ class VerifyEmail(APIView):
         "message": "expired Token",
         "redirect_url": "/home/"
     })
-        
+
 
 class ContactUsView(CreateAPIView):
     queryset = ContactRequest.objects.all()
@@ -130,11 +132,11 @@ class AgentApplyView(CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [CookieJWTAuthentication]
     parser_classes = [MultiPartParser, FormParser]
-    
+
 
     def perform_create(self, serializer):
         agent = self.request.user
-        agent.phone_number = self.phone_number
+        agent.phone_number = self.request.data['phone_number']
         if agent.agent_application.count() > 0:
             raise ValidationError("This agent has already made an application to be an agent")
         serializer.save(agent=agent)
@@ -150,7 +152,7 @@ class AgentApplicationList(APIView):
 class AgentApprovalView(APIView):
     permission_classes = [permissions.IsAdminUser]
     authentication_classes = [JWTAuthentication]
-    
+
     def get(self, request, id):
         agent = get_object_or_404(AppUser, id=id)
         agent.agent_status = True
@@ -196,7 +198,7 @@ class CreatePropertyImageView(CreateAPIView):
             raise ValidationError("Apply to be an agent first before trying to list a property")
         property_id = self.kwargs['property_id']
         serializer.save(property_id = property_id)
-    
+
 class ListAgentPropertiesView(APIView):
     serializer = ListAgentPropertySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -230,13 +232,13 @@ class PropertyDetailView(APIView):
             print(data['transaction'])
             return Response(data)
         return Response(serializer.data)
-    
+
 
 
 class EditPropertyView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [CookieJWTAuthentication]
-    
+
     @swagger_auto_schema(
         operation_description="Update a property listing",
         request_body=PropertyDetailSerializer,
@@ -254,28 +256,28 @@ class EditPropertyView(APIView):
         """
         # Get the property or return 404
         property_obj = get_object_or_404(Property, id=property_id)
-        
+
         # Check if the logged-in user is the agent who owns this property
         if property_obj.agent != request.user:
             return Response(
                 {'error': 'You do not have permission to edit this property'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # Validate required fields
-        required_fields = ['title', 'description', 'location', 'price', 
+        required_fields = ['title', 'description', 'location', 'price',
                           'property_type', 'size', 'no_of_bedrooms', 'no_of_bathrooms']
-        
+
         missing_fields = [field for field in required_fields if not request.data.get(field)]
         if missing_fields:
             return Response(
                 {'error': f'Missing required fields: {", ".join(missing_fields)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Update the property
         serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=False)
-        
+
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -285,9 +287,9 @@ class EditPropertyView(APIView):
                 },
                 status=status.HTTP_200_OK
             )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @swagger_auto_schema(
         operation_description="Partially update a property listing",
         request_body=PropertyDetailSerializer,
@@ -304,16 +306,16 @@ class EditPropertyView(APIView):
         Partially update an existing property
         """
         property_obj = get_object_or_404(Property, id=property_id)
-        
+
         # Check permission
         if property_obj.agent != request.user:
             return Response(
                 {'error': 'You do not have permission to edit this property'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=True)
-        
+
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -323,14 +325,14 @@ class EditPropertyView(APIView):
                 },
                 status=status.HTTP_200_OK
             )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DeletePropertyImageView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [CookieJWTAuthentication]
-    
+
     @swagger_auto_schema(
         operation_description="Delete a property image",
         responses={
@@ -345,21 +347,21 @@ class DeletePropertyImageView(APIView):
         Delete a specific property image
         """
         image = get_object_or_404(PropertyImage, id=image_id)
-        
+
         # Check if the logged-in user owns the property
         if image.property.agent != request.user:
             return Response(
                 {'error': 'You do not have permission to delete this image'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # Delete the image file from storage
         if image.image:
             image.image.delete(save=False)
-        
+
         # Delete the database record
         image.delete()
-        
+
         return Response(
             {'message': 'Image deleted successfully'},
             status=status.HTTP_200_OK
@@ -368,26 +370,17 @@ class DeletePropertyImageView(APIView):
 @csrf_exempt
 @xframe_options_exempt
 def login_view(request):
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        response = JsonResponse({})
-        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
-        response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
-    
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
 
         user = UserBackend.authenticate(request, email=data.get('email'), password=data.get('password'))
-        
+
         if user:
             refresh = RefreshToken.for_user(user)
-    
+
             response = JsonResponse({
                 'message': 'Login successful',
                 'full_name': user.full_name,
@@ -395,9 +388,9 @@ def login_view(request):
                 'email': user.email,
                 'is_agent': getattr(user, 'agent_status', False)  # Use getattr for safety
             })
-            
+
             response.set_cookie(
-                'access_token', 
+                'access_token',
                 str(refresh.access_token),
                 httponly=True,
                 secure=False,  # CHANGE to False for local development
@@ -405,7 +398,7 @@ def login_view(request):
                 path='/',
                 max_age=5000 * 60  # 5000 minutes in seconds
             )
-            
+
             response.set_cookie(
                 'refresh_token',
                 str(refresh),
@@ -415,15 +408,11 @@ def login_view(request):
                 path='/',
                 max_age=86400  # 1 day in seconds
             )
-            
-            # Add CORS headers
-            response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
-            response['Access-Control-Allow-Credentials'] = 'true'
-            
+
             return response
-        
+
         return JsonResponse({'error': 'Invalid credentials'}, status=401)
-        
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
     except Exception as e:
@@ -435,40 +424,23 @@ def logout_view(request):
     response = JsonResponse({'message': 'Logged out successfully'})
     response.delete_cookie('access_token', path='/')
     response.delete_cookie('refresh_token', path='/')
-    
-    # Add CORS headers
-    response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
-    response['Access-Control-Allow-Credentials'] = 'true'
-    
+
     return response
 
-# views.py
 @csrf_exempt
 def refresh_token_view(request):
-    if request.method == 'OPTIONS':
-        response = JsonResponse({})
-        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
-        response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
-    
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-    # Get refresh token from cookie
+
     refresh_token = request.COOKIES.get('refresh_token')
-    
     if not refresh_token:
         return JsonResponse({'error': 'No refresh token'}, status=401)
-    
+
     try:
         refresh = RefreshToken(refresh_token)
         new_access_token = str(refresh.access_token)
-        
+
         response = JsonResponse({'message': 'Token refreshed'})
-        
-        # Set new access token cookie
         response.set_cookie(
             'access_token',
             new_access_token,
@@ -476,17 +448,16 @@ def refresh_token_view(request):
             secure=False,
             samesite='Lax',
             path='/',
-            max_age=5000 * 60
+            max_age=5000 * 60,
         )
-        
-        response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
-        response['Access-Control-Allow-Credentials'] = 'true'
-        
         return response
-        
-    except Exception as e:
-        return JsonResponse({'error': 'Invalid refresh token'}, status=401)
-    
+    except TokenError as e:
+        # Token expired / invalid — clear the bad cookie so we don't loop
+        response = JsonResponse({'error': 'Invalid refresh token'}, status=401)
+        response.delete_cookie('refresh_token', path='/')
+        response.delete_cookie('access_token', path='/')
+        return response
+
 @method_decorator(csrf_exempt, name='dispatch')
 class DeletePropertyView(APIView):
     """
@@ -494,7 +465,7 @@ class DeletePropertyView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [CookieJWTAuthentication]
-    
+
     def delete(self, request, property_id):
         """
         Delete property by ID
@@ -502,14 +473,14 @@ class DeletePropertyView(APIView):
         try:
             # Get the property and ensure it belongs to the authenticated user
             property_obj = get_object_or_404(
-                Property, 
+                Property,
                 id=property_id,
                 agent=request.user  # Ensure user owns this property
             )
-            
+
             # Store property title for response message
             property_title = property_obj.title
-            
+
             # Delete all associated files and database records
             with transaction.atomic():
                 # Delete all associated photos and their files
@@ -520,10 +491,10 @@ class DeletePropertyView(APIView):
                         if default_storage.exists(photo.image.path):
                             default_storage.delete(photo.image.path)
                     photo.delete()
-                              
+
                 # Delete the property itself
                 property_obj.delete()
-            
+
             return Response(
                 {
                     "success": True,
@@ -532,7 +503,7 @@ class DeletePropertyView(APIView):
                 },
                 status=status.HTTP_200_OK
             )
-            
+
         except Property.DoesNotExist:
             return Response(
                 {
