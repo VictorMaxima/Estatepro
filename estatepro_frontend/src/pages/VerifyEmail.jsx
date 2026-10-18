@@ -1,17 +1,17 @@
 // src/pages/VerifyEmail.jsx
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function VerifyEmail() {
   const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('Verifying your email...');
   const location = useLocation();
   const navigate = useNavigate();
+  const { api } = useAuth();
 
   useEffect(() => {
     const verify = async () => {
-      
       const params = new URLSearchParams(location.search);
       const token = params.get('token');
 
@@ -22,32 +22,25 @@ function VerifyEmail() {
       }
 
       try {
-        const response = await fetch(`${API_URL}api/verify-email/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
+        await api.post('/api/verify-email/', { token });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus('success');
-          setMessage('Email verified successfully! You can now log in.');
-          setTimeout(() => navigate('/login'), 3000);
-        } else {
-          setStatus('error');
-          setMessage(data.detail || data.message || 'Verification failed');
-        }
+        setStatus('success');
+        setMessage('Email verified successfully! You can now log in.');
+        setTimeout(() => navigate('/login'), 3000);
       } catch (err) {
+        console.error('Email verification error:', err);
         setStatus('error');
-        setMessage('An error occurred. Please try again.');
+        setMessage(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            err.message ||
+            'Verification failed'
+        );
       }
     };
 
     verify();
-  }, [location, navigate]);
+  }, [api, location, navigate]);
 
   return (
     <div className="min-h-screen bg-bg-soft flex items-center justify-center px-4">

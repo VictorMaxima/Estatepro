@@ -1,77 +1,57 @@
 // src/pages/AdminDashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function AdminDashboard() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { api, user, logout } = useAuth();
 
-  const token = localStorage.getItem('accessToken');
-
-  
+  // Redirect if there's no authenticated user (AuthContext is the source of truth)
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       navigate('/login');
     }
-  }, [token, navigate]);
+  }, [user, navigate]);
 
-  
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!token) return;
+      if (!user) return;
 
       setLoading(true);
       setError('');
 
       try {
-        const response = await fetch(`${API_URL}list_applications`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || data.message || 'Failed to load applications');
-        }
-
-        setApplications(data); 
+        const response = await api.get('/list_applications');
+        setApplications(response.data);
       } catch (err) {
-        setError(err.message || 'Could not load agent applications');
+        console.error('Failed to load applications:', err);
+        setError(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            err.message ||
+            'Could not load agent applications'
+        );
+        if (err.response?.status === 401) {
+          logout();
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchApplications();
-  }, [token]);
+  }, [api, user, logout]);
 
-  
   const handleApprove = async (appId) => {
     if (!confirm('Are you sure you want to approve this agent?')) return;
 
     try {
-      const response = await fetch(`${API_URL}approve_application/${appId}/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'approved' }), 
-      });
+      await api.post(`/approve_application/${appId}/`, { status: 'approved' });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || 'Failed to approve application');
-      }
-
-    
       setApplications(prev =>
         prev.map(app =>
           app.id === appId ? { ...app, status: 'approved' } : app
@@ -80,25 +60,23 @@ function AdminDashboard() {
 
       alert('Agent approved successfully!');
     } catch (err) {
-      alert('Error approving: ' + err.message);
+      console.error('Approve error:', err);
+      if (err.response?.status === 401) {
+        logout();
+        return;
+      }
+      alert(
+        'Error approving: ' +
+          (err.response?.data?.detail || err.message || 'Unknown error')
+      );
     }
   };
 
-  
   const handleReject = async (appId) => {
     if (!confirm('Are you sure you want to reject this agent?')) return;
 
     try {
-      const response = await fetch(`${API_URL}approve_application/${appId}/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'rejected' }),
-      });
-
-      if (!response.ok) throw new Error('Failed to reject application');
+      await api.post(`/approve_application/${appId}/`, { status: 'rejected' });
 
       setApplications(prev =>
         prev.map(app =>
@@ -108,7 +86,15 @@ function AdminDashboard() {
 
       alert('Application rejected.');
     } catch (err) {
-      alert('Error rejecting: ' + err.message);
+      console.error('Reject error:', err);
+      if (err.response?.status === 401) {
+        logout();
+        return;
+      }
+      alert(
+        'Error rejecting: ' +
+          (err.response?.data?.detail || err.message || 'Unknown error')
+      );
     }
   };
 

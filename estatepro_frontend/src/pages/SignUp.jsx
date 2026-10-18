@@ -1,6 +1,7 @@
+// src/pages/Signup.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API_URL from '@/config/api';
+import { useAuth } from '../context/AuthContext';
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +23,6 @@ function Signup() {
     e.preventDefault();
     setError('');
 
-    // Client-side validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -30,31 +31,22 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          full_name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          
-        }),
+      const result = await signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        
-        throw new Error(data.detail || data.message || 'Signup failed. Please try again.');
+      if (!result.success) {
+        setError(result.error || 'Signup failed. Please try again.');
+        return;
       }
 
-      // Success!
       alert('Account created successfully! Please log in.');
       navigate('/login');
-
     } catch (err) {
+      // Safety net for network/axios-level throws signup() doesn't catch
+      console.error('Signup error:', err);
       setError(err.message || 'An error occurred during signup');
     } finally {
       setLoading(false);

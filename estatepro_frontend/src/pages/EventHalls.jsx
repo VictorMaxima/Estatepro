@@ -1,64 +1,63 @@
+// src/pages/EventHalls.jsx
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+const EVENT_TYPES = ['Wedding', 'Conference', 'Party', 'Corporate'];
 
 function EventHalls() {
-  const hallListings = [
-    {
-      id: 1,
-      name: "Ikoyi Main Event, Lagos",
-      location: "Ikoyi, Lagos",
-      capacity: "3,000 guests",
-      price: "From ₦12,000,000",
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-    },
-    {
-      id: 2,
-      name: "Landmark Event Centre",
-      location: "Oniru, Lagos",
-      capacity: "3,000 guests",
-      price: "From ₦12,000,000",
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-    },
-    {
-      id: 3,
-      name: "International Conference Centre",
-      location: "Abuja",
-      capacity: "4,000 guests",
-      price: "From ₦10,000,000",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-    },
-    {
-      id: 4,
-      name: "Civic Centre Lagos",
-      location: "Victoria Island, Lagos",
-      capacity: "2,500 guests",
-      price: "From ₦8,000,000",
-      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-    },
-    {
-      id: 5,
-      name: "The Dome",
-      location: "Ikeja, Lagos",
-      capacity: "10,000 guests",
-      price: "From ₦20,000,000",
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-    },
-    {
-      id: 6,
-      name: "Oriental Hotel Event Hall",
-      location: "Lekki, Lagos",
-      capacity: "1,500 guests",
-      price: "From ₦6,000,000",
-      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-    },
-  ];
+  const [hallListings, setHallListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    location: '',
+    date: '',
+    eventType: '',
+  });
+  const { api } = useAuth();
+
+  useEffect(() => {
+    const fetchHalls = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        // Adjust the endpoint/params to match your backend
+        const response = await api.get('/event-halls/', {
+          params: {
+            location: filters.location || undefined,
+            date: filters.date || undefined,
+            event_type: filters.eventType || undefined,
+          },
+        });
+        setHallListings(Array.isArray(response.data) ? response.data : response.data.results || []);
+      } catch (err) {
+        console.error('Failed to load event halls:', err);
+        setError(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            err.message ||
+            'Could not load event halls'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHalls();
+  }, [api, filters]);
+
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
 
   return (
     <div className="min-h-screen bg-bg-soft">
       {/* Hero Section */}
       <section className="relative h-96 md:h-[60vh] overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1511578314322-1a428e4b67e6?w=1600&q=80" 
-          alt="Event Hall" 
+        <img
+          src="https://images.unsplash.com/photo-1511578314322-1a428e4b67e6?w=1600&q=80"
+          alt="Event Hall"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-primary bg-opacity-60" />
@@ -73,14 +72,31 @@ function EventHalls() {
             <div className="max-w-3xl mx-auto">
               <div className="bg-white rounded-xl shadow-card p-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <input type="text" placeholder="Location" className="px-4 py-3 border rounded-lg" />
-                  <input type="date" className="px-4 py-3 border rounded-lg" />
-                  <select className="px-4 py-3 border rounded-lg">
-                    <option>Event Type</option>
-                    <option>Wedding</option>
-                    <option>Conference</option>
-                    <option>Party</option>
-                    <option>Corporate</option>
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Location"
+                    value={filters.location}
+                    onChange={handleFilterChange}
+                    className="px-4 py-3 border rounded-lg"
+                  />
+                  <input
+                    type="date"
+                    name="date"
+                    value={filters.date}
+                    onChange={handleFilterChange}
+                    className="px-4 py-3 border rounded-lg"
+                  />
+                  <select
+                    name="eventType"
+                    value={filters.eventType}
+                    onChange={handleFilterChange}
+                    className="px-4 py-3 border rounded-lg"
+                  >
+                    <option value="">Event Type</option>
+                    {EVENT_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
                   </select>
                   <button className="btn-primary">Find Venues</button>
                 </div>
@@ -96,22 +112,51 @@ function EventHalls() {
           <h2 className="text-4xl font-bold text-center text-text-primary mb-12">
             Featured Event Halls
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {hallListings.map((hall) => (
-              <div key={hall.id} className="bg-white rounded-xl shadow-card overflow-hidden hover:shadow-card-hover transition">
-                <img src={hall.image} alt={hall.name} className="w-full h-64 object-cover" />
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold text-text-primary mb-2">{hall.name}</h3>
-                  <p className="text-text-muted mb-4">{hall.location}</p>
-                  <p className="text-lg text-text-primary mb-2">Capacity: {hall.capacity}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-primary">{hall.price}</span>
-                    <button className="btn-primary">Book Venue</button>
+
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-primary mx-auto mb-4"></div>
+              <p className="text-text-muted">Loading venues...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16 bg-white rounded-xl shadow-card max-w-md mx-auto p-8">
+              <h3 className="text-2xl font-bold text-red-600 mb-4">Error</h3>
+              <p className="text-text-muted mb-6">{error}</p>
+              <button
+                onClick={() => setFilters({ ...filters })}
+                className="btn-primary py-3 px-6"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : hallListings.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-xl shadow-card max-w-md mx-auto p-8">
+              <h3 className="text-2xl font-bold text-text-primary mb-4">No Venues Found</h3>
+              <p className="text-text-muted">
+                No event halls match your search. Try adjusting your filters.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {hallListings.map((hall) => (
+                <div
+                  key={hall.id}
+                  className="bg-white rounded-xl shadow-card overflow-hidden hover:shadow-card-hover transition"
+                >
+                  <img src={hall.image} alt={hall.name} className="w-full h-64 object-cover" />
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold text-text-primary mb-2">{hall.name}</h3>
+                    <p className="text-text-muted mb-4">{hall.location}</p>
+                    <p className="text-lg text-text-primary mb-2">Capacity: {hall.capacity}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-primary">{hall.price}</span>
+                      <button className="btn-primary">Book Venue</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -149,7 +194,10 @@ function EventHalls() {
           <p className="text-xl mb-10">
             Let us help you find the perfect venue
           </p>
-          <Link to="/" className="inline-block bg-white text-primary font-bold px-10 py-4 rounded-full hover:bg-gray-100 transition">
+          <Link
+            to="/"
+            className="inline-block bg-white text-primary font-bold px-10 py-4 rounded-full hover:bg-gray-100 transition"
+          >
             Start Your Search
           </Link>
         </div>

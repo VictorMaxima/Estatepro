@@ -2,49 +2,50 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import PaystackPop from '@paystack/inline-js';
-import API_URL from '@/config/api';
 import { useAuth } from '../context/AuthContext';
 
 function Checkout() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { api, user } = useAuth();
 
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  // NEW: Scam warning states
   const [showScamWarning, setShowScamWarning] = useState(true);
   const [hasAgreed, setHasAgreed] = useState(false);
 
-  // Fetch property details (unchanged)
+  // Fetch property details
   useEffect(() => {
     const fetchProperty = async () => {
+      setLoading(true);
+      setError('');
+
       try {
-        const response = await fetch(`${API_URL}properties/detail/${slug}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || 'Property not found');
-        }
-
-        setProperty(data);
+        const response = await api.get(`/properties/detail/${slug}`);
+        setProperty(response.data);
       } catch (err) {
-        setError(err.message || 'Failed to load property');
+        console.error('Failed to load property:', err);
+        setError(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            err.message ||
+            'Failed to load property'
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [slug]);
+  }, [api, slug]);
+
+  // Derive first / last name from the context's `name` field
+  const fullName = user?.name || '';
+  const [firstName, ...rest] = fullName.trim().split(' ');
+  const lastName = rest.join(' ');
 
   const payWithPaystack = () => {
     if (!property?.price) {
@@ -58,22 +59,39 @@ function Checkout() {
     const handler = PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
       email: user?.email || 'buyer@example.com',
-      amount: property.price * 100, // Convert to kobo
+      amount: property.price * 100, // kobo
       currency: 'NGN',
-      ref: '' + Math.floor((Math.random() * 1000000000) + 1),
-      firstname: user?.firstName || 'Customer',
-      lastname: user?.lastName || '',
+      ref: '' + Math.floor(Math.random() * 1000000000 + 1),
+      firstname: firstName || 'Customer',
+      lastname: lastName || '',
       metadata: {
         property_id: property.id,
         slug: property.slug,
         user_id: user?.id,
       },
-      callback: (response) => {
-        console.log('Payment successful:', response);
-        alert('Payment successful! Reference: ' + response.reference);
-        setPaymentLoading(false);
-        // TODO: Call backend to verify payment
-        navigate('/payment-success');
+      callback: async (response) => {
+        console.log('Paystack payment successful:', response);
+
+        try {
+          // Verify on the backend — never trust the client callback alone
+          await api.post('/payments/verify/', {
+            reference: response.reference,
+            property_id: property.id,
+          });
+
+          navigate('/payment-success');
+        } catch (err) {
+          console.error('Payment verification failed:', err);
+          setError(
+            err.response?.data?.detail ||
+              err.response?.data?.message ||
+              err.message ||
+              'Payment succeeded but verification failed. Contact support with reference: ' +
+                response.reference
+          );
+        } finally {
+          setPaymentLoading(false);
+        }
       },
       onClose: () => {
         console.log('Payment window closed');
@@ -156,7 +174,7 @@ function Checkout() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => navigate(-1)} // or navigate('/properties')
+                  onClick={() => navigate(-1)}
                   className="flex-1 bg-gray-300 text-gray-800 py-4 rounded-xl font-semibold hover:bg-gray-400 transition"
                 >
                   Cancel & Go Back
@@ -181,7 +199,7 @@ function Checkout() {
             </div>
           </div>
         ) : (
-          // ── NORMAL CHECKOUT CONTENT (only shown after agreement) ──
+          // ── NORMAL CHECKOUT CONTENT ──
           <div className="bg-white rounded-2xl shadow-card p-8 md:p-12">
             {/* Property Summary */}
             <div className="grid md:grid-cols-2 gap-8 mb-12">

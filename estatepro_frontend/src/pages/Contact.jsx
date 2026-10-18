@@ -1,15 +1,14 @@
 // src/pages/Contact.jsx
 import { useState } from 'react';
-import API_URL from '@/config/api';
 import { useAuth } from '../context/AuthContext';
 
 function Contact() {
-  const { user } = useAuth();
-  
+  const { api, user } = useAuth();
+
   const [formData, setFormData] = useState({
-    name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '',
+    name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    phone: '',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -34,7 +33,6 @@ function Contact() {
       setError('Please enter your message');
       return false;
     }
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email.trim())) {
       setError('Please enter a valid email address');
@@ -54,37 +52,29 @@ function Contact() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone.trim() || null,
-          message: formData.message.trim(),
-          user_id: user?.id || null,
-        }),
+      await api.post('/contact', {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        message: formData.message.trim(),
+        user_id: user?.id || null,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || data.message || 'Failed to send message');
-      }
-
       setSuccess(true);
-      setFormData({ 
-        name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '', 
-        email: user?.email || '', 
-        phone: user?.phone || '', 
-        message: '' 
-      }); // Reset form but keep user info
-
+      setFormData({
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: '',
+        message: '',
+      });
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again later.');
+      console.error('Contact form error:', err);
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.message ||
+          'An error occurred. Please try again later.'
+      );
     } finally {
       setLoading(false);
     }
