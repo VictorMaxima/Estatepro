@@ -16,5 +16,5 @@
 
 /* Custom reusable classes */
 .btn-primary {
-  @apply #000050 bg-primary text-white font-semibold px-8 py-4 rounded-xl hover:bg-primary-hover transition shadow-[0_4px_20px_rgba(0,0,0,0.06)];
+  @apply bg-primary text-white font-semibold px-8 py-4 rounded-xl hover:bg-primary-hover transition shadow-[0_4px_20px_rgba(0,0,0,0.06)];
 }
