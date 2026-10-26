@@ -48,7 +48,7 @@ class AppUser(AbstractUser):
     phone_number = models.CharField(blank=True, default='')
     referral_code = models.CharField(max_length=45, blank=True)
     invite_code = models.CharField(max_length=45, blank=True)
-
+    
 
 class AgentApplication(models.Model):
     agent = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="agent_application")
@@ -57,7 +57,7 @@ class AgentApplication(models.Model):
     nin_number = models.CharField(max_length=11)
     years_of_experience = models.CharField(max_length=32)
     id_file = models.FileField(upload_to="id_files")
-    license_file = models.FileField(upload_to="licence_files",blank=True, null=True)
+    license_file = models.FileField(upload_to="licence_files", blank=True, null=True)
 
 class ContactRequest(models.Model):
     name = models.CharField(max_length=500)
@@ -107,3 +107,6 @@ class Property(models.Model):
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="property_pictures")
+    
+
+    

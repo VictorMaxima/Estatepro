@@ -10,6 +10,10 @@ function PropertyDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [viewingCode, setViewingCode] = useState('');
+  const [actionMsg, setActionMsg] = useState('');
+  const [disputeReason, setDisputeReason] = useState('');
+  const [showDispute, setShowDispute] = useState(false);
 
   // Get all images
   const getAllImages = () => {
@@ -38,6 +42,15 @@ function PropertyDetails() {
         const response = await api.get(`/properties/detail/${id}`);
         setProperty(response.data);
         setError('');
+        const txn = response.data.transaction;
+        if (txn && txn.status === 'held') {
+          try {
+            const t = await api.get(`/payment/transaction/${txn.paystack_reference}/`);
+            setViewingCode(t.data.viewing_code || '');
+          } catch (e) {
+            /* code stays hidden if it can't be loaded */
+          }
+        }
       } catch (err) {
         console.error('Error fetching property:', err);
         setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to load property details');
@@ -54,6 +67,30 @@ function PropertyDetails() {
       setLoading(false);
     }
   }, [id, api]);
+
+  const txn = property?.transaction;
+
+  const reload = () => window.location.reload();
+
+  const submitDispute = async () => {
+    setActionMsg('');
+    try {
+      await api.post(`/payment/dispute/${txn.id}/`, { reason: disputeReason });
+      reload();
+    } catch (err) {
+      setActionMsg(err.response?.data?.error || 'Could not open dispute');
+    }
+  };
+
+  const requestRefund = async () => {
+    setActionMsg('');
+    try {
+      await api.post(`/payment/refund/${txn.id}/`);
+      reload();
+    } catch (err) {
+      setActionMsg(err.response?.data?.error || 'Refund not available');
+    }
+  };
 
   if (loading) {
     return (
@@ -238,14 +275,107 @@ function PropertyDetails() {
                 </div>
               </div>
 
-              {/* Proceed to Checkout Button */}
+              {/* Payment / escrow status */}
               <div className="mt-12">
-                <Link
-                  to={`/checkout/${property.id}`}
-                  className="block w-full bg-primary text-white text-center py-5 rounded-xl font-bold text-xl hover:bg-primary-dark transition"
-                >
-                  Proceed to Checkout
-                </Link>
+                {txn && txn.status === 'pending' && (
+                  <a
+                    href={txn.authorization_url}
+                    className="block w-full bg-primary text-white text-center py-5 rounded-xl font-bold text-xl hover:bg-primary-dark transition"
+                  >
+                    Complete Payment
+                  </a>
+                )}
+
+                {txn && txn.status === 'held' && (
+                  <div className="border border-primary rounded-xl p-6 space-y-3">
+                    <h3 className="text-xl font-bold text-text-primary">Payment held in escrow</h3>
+                    <p className="text-text-muted">
+                      The agent is paid only after you have viewed the property. At the viewing, give the agent this
+                      code. Do not share it before you are at the property.
+                    </p>
+                    <p className="text-4xl font-bold tracking-widest text-primary text-center">
+                      {viewingCode || '------'}
+                    </p>
+                    {txn.viewing_deadline && (
+                      <p className="text-sm text-text-muted text-center">
+                        View by {new Date(txn.viewing_deadline).toLocaleDateString()}. If no viewing happens by
+                        then, you can request a refund.
+                      </p>
+                    )}
+                    {txn.viewing_deadline && new Date() > new Date(txn.viewing_deadline) && (
+                      <button
+                        onClick={requestRefund}
+                        className="w-full border-2 border-primary text-primary font-bold py-3 rounded-xl hover:bg-primary hover:text-white transition"
+                      >
+                        Request Refund
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {txn && txn.status === 'viewing_confirmed' && (
+                  <div className="border border-primary rounded-xl p-6 space-y-3">
+                    <h3 className="text-xl font-bold text-text-primary">Viewing confirmed</h3>
+                    <p className="text-text-muted">
+                      If the property did not match the listing, report it before{' '}
+                      {txn.dispute_deadline ? new Date(txn.dispute_deadline).toLocaleString() : 'the deadline'}.
+                      Otherwise the payment is released to the agent.
+                    </p>
+                    {showDispute ? (
+                      <>
+                        <textarea
+                          value={disputeReason}
+                          onChange={(e) => setDisputeReason(e.target.value)}
+                          rows={3}
+                          className="w-full px-4 py-3 border border-border-light rounded-lg"
+                          placeholder="What was wrong?"
+                        />
+                        <button
+                          onClick={submitDispute}
+                          disabled={!disputeReason.trim()}
+                          className="w-full bg-primary text-white py-3 rounded-xl font-semibold disabled:opacity-50"
+                        >
+                          Submit Dispute
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowDispute(true)}
+                        className="w-full border-2 border-primary text-primary font-bold py-3 rounded-xl hover:bg-primary hover:text-white transition"
+                      >
+                        Report a Problem
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {txn && ['released', 'paid_out'].includes(txn.status) && (
+                  <p className="text-center text-green-700 font-semibold">Purchase complete.</p>
+                )}
+                {txn && txn.status === 'disputed' && (
+                  <p className="text-center text-yellow-800 font-semibold">
+                    Your dispute is under review. Funds stay on hold until it is resolved.
+                  </p>
+                )}
+                {txn && txn.status === 'refunded' && (
+                  <p className="text-center text-text-muted font-semibold">This payment was refunded.</p>
+                )}
+
+                {!txn && property.status && property.status !== 'available' && (
+                  <p className="text-center text-text-muted font-semibold capitalize">
+                    This property is {property.status}.
+                  </p>
+                )}
+                {!txn && (!property.status || property.status === 'available') && (
+                  <Link
+                    to={`/checkout/${property.id}`}
+                    className="block w-full bg-primary text-white text-center py-5 rounded-xl font-bold text-xl hover:bg-primary-dark transition"
+                  >
+                    Proceed to Checkout
+                  </Link>
+                )}
+
+                {actionMsg && <p className="text-red-600 text-center mt-3">{actionMsg}</p>}
               </div>
             </div>
           </div>

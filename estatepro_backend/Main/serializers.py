@@ -45,11 +45,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactRequest
-        fields = ['name', 'email', 'phone_number', 'message']
+        fields = ['name', 'email', 'phone_number', 'message'] 
 
 class CreateAgentApplySerializer(serializers.ModelSerializer):
     id_file = serializers.FileField(required=True)
-    license_file = serializers.FileField(required=False)
+    license_file = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = AgentApplication
@@ -81,7 +81,7 @@ class CreatePropertyListingSerializer(serializers.ModelSerializer):
         model = Property
         fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced']
-
+        
 class CreatePropertyImageSerializer(serializers.ModelSerializer):
     image = serializers.FileField(required=True)
     class Meta:
@@ -131,4 +131,5 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
         model = Property
         fields = ['agent','title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
-                  'images', 'status']
+                  'images', 'status', 'id']
+        read_only_fields = ['status', 'id']  # status is controlled by the payment flow only
