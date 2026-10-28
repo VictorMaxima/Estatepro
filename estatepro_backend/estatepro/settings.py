@@ -14,6 +14,13 @@ from pathlib import Path
 from datetime import timedelta
 from drf_yasg import openapi
 import os
+from dotenv import load_dotenv
+
+# Automatically loads the .env file
+load_dotenv()
+
+# Retrieve the variables
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -68,7 +75,7 @@ CSRF_COOKIE_SECURE = False
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 AUTH_USER_MODEL = 'Main.AppUser'
 ALLOWED_HOSTS = ['127.0.0.1', 'maximavictor.pythonanywhere.com', 'localhost']
 AUTHENTICATION_BACKENDS = [

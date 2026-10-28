@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
@@ -9,7 +9,7 @@ from .views import (
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authtoken import views
 urlpatterns = [
-    path('api/register', RegisterView.as_view(), name='register'),
+    re_path(r'^api/register/?$', RegisterView.as_view(), name='register'),
     path('api/verify-email/', VerifyEmail.as_view(), name='email-verify'),
     path('api/token/', login_view, name='token_obtain_pair'),
     path('api/token/refresh/', refresh_token_view, name='token_refresh'),

@@ -56,6 +56,7 @@ class Transaction(models.Model):
     def summary(self):
         return {
             "id": self.pk,
+            "property_id": self.property_id,
             "paystack_reference": self.paystack_reference,
             "status": self.status,
             "authorization_url": self.authorization_url if self.status == "pending" else "",

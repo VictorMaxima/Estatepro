@@ -91,6 +91,14 @@ class InitializePaymentView(APIView):
             return Response({"error": "You cannot buy your own listing"}, status=400)
         if not prop.agent.agent_status:
             return Response({"error": "This listing is not available"}, status=400)
+        # The same buyer retrying: hand back their still-valid pending payment link.
+        existing = (Transaction.objects
+                    .filter(property=prop, buyer=request.user, status="pending",
+                            created_at__gte=timezone.now() - PENDING_HOLD)
+                    .exclude(authorization_url="").order_by("-created_at").first())
+        if existing:
+            return Response({"authorization_url": existing.authorization_url,
+                             "reference": existing.paystack_reference})
         if property_is_taken(prop):
             return Response({"error": "This property is no longer available"}, status=409)
 
@@ -101,12 +109,17 @@ class InitializePaymentView(APIView):
             amount_kobo=amount, commission_kobo=commission, seller_kobo=amount - commission)
 
         try:
-            r = requests.post(f"{PAYSTACK}/transaction/initialize", headers=_headers(), timeout=15, json={
+            payload = {
                 "email": request.user.email,
                 "amount": amount,
                 "currency": txn.currency,
                 "reference": txn.paystack_reference,
-            })
+            }
+            callback = getattr(settings, "PAYSTACK_CALLBACK_URL", "")
+            if callback:  # e.g. https://your-site/payment-success
+                payload["callback_url"] = callback
+            r = requests.post(f"{PAYSTACK}/transaction/initialize", headers=_headers(), timeout=15,
+                              json=payload)
             ok = r.status_code == 200 and r.json().get("status")
         except requests.RequestException:
             ok = False

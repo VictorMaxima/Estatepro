@@ -159,21 +159,13 @@ export function AuthProvider({ children }) {
 
   const signup = async (userData) => {
     try {
-      const response = await api.post('/register/', {
+      // Registration does not log the user in (no cookies are set), so we don't store a user here.
+      await api.post('/register/', {
+        full_name: userData.name,
         email: userData.email,
-        username: userData.email,
         password: userData.password,
-        first_name: userData.name,
       });
-      const newUser = {
-        id: response.data.user_id,
-        email: response.data.email,
-        name: response.data.full_name || userData.name,
-        isAgent: false,
-      };
-      localStorage.setItem('homemuUser', JSON.stringify(newUser));
-      setUser(newUser);
-      return { success: true, user: newUser };
+      return { success: true };
     } catch (error) {
       return {
         success: false,

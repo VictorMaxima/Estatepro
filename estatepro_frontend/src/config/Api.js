@@ -1,5 +1,5 @@
 // src/config/api.js
-const apiUrl = "https://maximavictor.pythonanywhere.com/api"
+const apiUrl = "https://maximavictor.pythonanywhewre.com/api"
 const baseUrl = 'https://maximavictor.pythonanywhere.com';
 export const API_URL = apiUrl.endsWith('/') ? apiUrl : `${apiUrl}/`;
 export const BASE_URL = baseUrl;

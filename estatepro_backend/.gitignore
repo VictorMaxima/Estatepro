@@ -1,3 +1,4 @@
 estatepro_backend_env
 _pycache_
 db.sqlite3
+.env
