@@ -195,9 +195,31 @@ function Header() {
 
               <div className="border-t border-border pt-6 space-y-4">
                 {user ? (
-                  <div className="px-4 py-3">
-                    <ProfileDropdown />
-                  </div>
+                  <>
+                    <Link
+                      to="/profile"
+                      onClick={closeMenu}
+                      className="block text-center font-medium text-text-primary py-3"
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/my-properties"
+                      onClick={closeMenu}
+                      className="block text-center font-medium text-text-primary py-3"
+                    >
+                      My Properties
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        closeMenu();
+                      }}
+                      className="block text-center font-medium text-red-600 py-3"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link

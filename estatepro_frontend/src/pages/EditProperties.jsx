@@ -303,21 +303,21 @@ function EditProperty() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-soft py-12">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen bg-bg-soft py-6 md:py-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <div className="mb-8">
           <Link to="/agent/properties" className="text-primary hover:underline flex items-center gap-2">
             ← Back to My Properties
           </Link>
         </div>
 
-        <h1 className="text-5xl font-bold text-text-primary text-center mb-8">
+        <h1 className="text-3xl md:text-5xl font-bold text-text-primary text-center mb-8">
           Edit Property
         </h1>
 
         {/* Progress Indicator */}
         <div className="flex justify-center mb-12">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 md:gap-8">
             {[1, 2, 3].map((num) => (
               <div key={num} className="flex items-center">
                 <div
@@ -343,7 +343,7 @@ function EditProperty() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-700 mx-auto"></div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-card p-8 md:p-12">
+          <div className="bg-white rounded-2xl shadow-card p-6 md:p-12">
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-xl mb-8">
                 <p className="font-semibold mb-2">Error:</p>
@@ -355,7 +355,7 @@ function EditProperty() {
               {/* Step 1: Basic Info */}
               {step === 1 && (
                 <div className="space-y-6">
-                  <h2 className="text-3xl font-bold text-text-primary mb-8">Basic Information</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">Basic Information</h2>
 
                   <div>
                     <label className="block text-lg font-semibold text-text-primary mb-2">
@@ -472,7 +472,7 @@ function EditProperty() {
               {/* Step 2: Details & Amenities */}
               {step === 2 && (
                 <div className="space-y-6">
-                  <h2 className="text-3xl font-bold text-text-primary mb-8">Property Details</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">Property Details</h2>
 
                   <div className="grid md:grid-cols-3 gap-6">
                     <div>
@@ -591,7 +591,7 @@ function EditProperty() {
               {/* Step 3: Photos & Final Review */}
               {step === 3 && (
                 <div className="space-y-8">
-                  <h2 className="text-3xl font-bold text-text-primary mb-8">Photos & Final Review</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">Photos & Final Review</h2>
 
                   {/* Existing Photos */}
                   {existingPhotos.length > 0 && (

@@ -32,7 +32,7 @@ export default function ProfileDropdown() {
   'User';
 
   return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
+    <div className="relative inline-block text-left hidden md:block" ref={dropdownRef}>
       {/* Trigger button */}
       <button
         type="button"
@@ -68,13 +68,7 @@ export default function ProfileDropdown() {
       {/* Dropdown menu */}
       {isOpen && (
         <div
-          className="
-            absolute right-0 mt-3 w-64 sm:w-72 
-            bg-white rounded-xl shadow-2xl border border-gray-200/70 
-            py-1.5 z-50 overflow-hidden animate-fade-in-up
-            max-h-[70vh] overflow-y-auto
-            max-w-[calc(100vw-2rem)]
-          "
+          className="absolute mt-3 w-64 sm:w-72 left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 bg-white rounded-xl shadow-2xl border border-gray-200/70 py-1.5 z-[60] animate-fade-in-up max-h-[70vh] overflow-y-auto max-w-[calc(100vw-2rem)]"
         >
           {/* User info header */}
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
