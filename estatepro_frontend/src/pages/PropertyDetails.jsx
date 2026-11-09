@@ -1,11 +1,13 @@
 // src/pages/PropertyDetails.jsx
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { BASE_URL } from '../config/Api';
 
 function PropertyDetails() {
   const { id } = useParams();
-  const { api, isAuthenticated } = useAuth();
+  const { api, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,13 +16,21 @@ function PropertyDetails() {
   const [actionMsg, setActionMsg] = useState('');
   const [disputeReason, setDisputeReason] = useState('');
   const [showDispute, setShowDispute] = useState(false);
+  const [viewingFeeLoading, setViewingFeeLoading] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
 
   // Get all images
   const getAllImages = () => {
-    if (!property?.images || property.images.length === 0) {
-      return [];
-    }
-    return property.images.map(img => img.image_url);
+      if (!property?.images || property.images.length === 0) {
+          return [];
+      }
+      return property.images.map(img => {
+          const url = img.image_url;
+          if (url.startsWith('http')) return url;
+          return `${BASE_URL}${url}`;
+      });
   };
 
   const images = getAllImages();
@@ -89,6 +99,54 @@ function PropertyDetails() {
       reload();
     } catch (err) {
       setActionMsg(err.response?.data?.error || 'Refund not available');
+    }
+  };
+
+  const startViewingFeePayment = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setViewingFeeLoading(true);
+    setActionMsg('');
+    try {
+      const res = await api.post(`/payment/viewing-fee/${property.id}/`);
+      window.location.href = res.data.authorization_url;
+    } catch (err) {
+      setActionMsg(
+        err.response?.data?.error ||
+          err.response?.data?.detail ||
+          'Could not start viewing fee payment. Please try again.'
+      );
+      setViewingFeeLoading(false);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (!messageText.trim()) {
+      setActionMsg('Please type a message before sending');
+      return;
+    }
+    setMessageLoading(true);
+    setActionMsg('');
+    try {
+      await api.post(`/api/properties/${property.id}/message/`, {
+        message: messageText.trim(),
+      });
+      setMessageSent(true);
+      setMessageText('');
+    } catch (err) {
+      setActionMsg(
+        err.response?.data?.error ||
+          err.response?.data?.detail ||
+          'Could not send message. Please try again.'
+      );
+    } finally {
+      setMessageLoading(false);
     }
   };
 
@@ -217,6 +275,13 @@ function PropertyDetails() {
                 <p className="text-4xl font-bold text-primary whitespace-nowrap">
                   ₦{parseInt(property.price || 0).toLocaleString()}
                 </p>
+                {property.looking_fee && property.looking_fee > 0 && (
+                  <>
+                    <p className="text-sm text-text-muted mt-1">
+                      Viewing fee: ₦{parseInt(property.looking_fee).toLocaleString()}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-6 py-8 border-y border-border-light">
@@ -400,13 +465,36 @@ function PropertyDetails() {
               </div>
 
               <div className="space-y-4">
-                <button className="w-full bg-primary text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition">
-                  Schedule Viewing
+                <button
+                  onClick={startViewingFeePayment}
+                  disabled={viewingFeeLoading || !property.looking_fee || property.looking_fee <= 0}
+                  className={`w-full py-4 rounded-xl font-semibold text-lg transition ${viewingFeeLoading || !property.looking_fee || property.looking_fee <= 0 ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'}`}
+                >
+                  {viewingFeeLoading ? 'Redirecting...' : 'Schedule Viewing'}
                 </button>
 
-                <button className="w-full border-2 border-primary text-primary font-bold py-4 rounded-xl hover:bg-primary hover:text-white transition text-lg">
-                  Send Message
-                </button>
+                {messageSent ? (
+                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-center text-sm font-semibold mb-4">
+                    Message sent to agent!
+                  </div>
+                ) : (
+                  <>
+                    <textarea
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder="Type your message to the agent..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-3"
+                    />
+                    <button
+                      onClick={sendMessage}
+                      disabled={messageLoading || !messageText.trim()}
+                      className={`w-full py-4 rounded-xl font-semibold text-lg transition ${messageLoading || !messageText.trim() ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'}`}
+                    >
+                      {messageLoading ? 'Sending...' : 'Send Message'}
+                    </button>
+                  </>
+                )}
 
                 <a
                   href={`tel:${property.agent?.phone_number || '+2348030000000'}`}

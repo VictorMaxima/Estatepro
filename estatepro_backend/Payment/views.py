@@ -382,3 +382,50 @@ class AgentEarningsView(APIView):
                 "id": p.pk, "amount_kobo": p.amount_kobo, "status": p.status, "created_at": p.created_at,
             } for p in payouts],
         })
+
+
+# ---- Buyer: pay viewing fee (looking fee) to schedule a viewing ----------------
+class InitializeViewingFeeView(APIView):
+    """Initialize a Paystack transaction for the property's looking_fee.
+
+    The looking fee is set by the agent on the listing and paid by the buyer
+    to schedule a viewing. It is separate from the escrow purchase payment.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+
+    def post(self, request, property_id):
+        prop = get_object_or_404(Property, id=property_id)
+        if prop.agent_id == request.user.id:
+            return Response({"error": "You cannot schedule a viewing on your own listing"}, status=400)
+        if not prop.agent.agent_status:
+            return Response({"error": "This listing is not available"}, status=400)
+        looking_fee = int(prop.looking_fee or 0)
+        if looking_fee <= 0:
+            return Response({"error": "This property has no viewing fee set"}, status=400)
+
+        amount_kobo = looking_fee * 100
+        reference = uuid.uuid4().hex
+
+        try:
+            payload = {
+                "email": request.user.email,
+                "amount": amount_kobo,
+                "currency": "NGN",
+                "reference": reference,
+            }
+            callback = getattr(settings, "PAYSTACK_CALLBACK_URL", "")
+            if callback:
+                payload["callback_url"] = callback
+            r = requests.post(f"{PAYSTACK}/transaction/initialize", headers=_headers(), timeout=15,
+                              json=payload)
+            ok = r.status_code == 200 and r.json().get("status")
+        except requests.RequestException:
+            ok = False
+        if not ok:
+            return Response({"error": "Could not start viewing fee payment"}, status=502)
+
+        authorization_url = r.json()["data"]["authorization_url"]
+        return Response({"authorization_url": authorization_url,
+                         "reference": reference,
+                         "amount_kobo": amount_kobo})

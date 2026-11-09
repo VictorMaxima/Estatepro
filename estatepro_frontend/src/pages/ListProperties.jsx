@@ -15,6 +15,7 @@ function ListProperty() {
     title: '',
     description: '',
     price: '',
+    looking_fee: '',
     location: '',
     property_type: 'sale',
     size: '',
@@ -109,6 +110,12 @@ function ListProperty() {
       return;
     }
 
+    const looking_fee = parseInt(formData.looking_fee);
+    if (isNaN(looking_fee) || looking_fee < 0 || looking_fee > 1000000000) {
+      setError('Looking fee must be between ₦0 and ₦1,000,000,000');
+      return;
+    }
+
     const price = parseInt(formData.price);
     if (isNaN(price) || price < 100 || price > 1000000000) {
       setError('Price must be between ₦100 and ₦1,000,000,000');
@@ -143,6 +150,7 @@ function ListProperty() {
         description: formData.description.trim(),
         location: formData.location.trim(),
         price: Number(formData.price),
+        looking_fee: Number(formData.looking_fee) || 0,
         property_type: formData.property_type,
         size: Number(formData.size),
         no_of_bedrooms: Number(formData.no_of_bedrooms),
@@ -324,7 +332,24 @@ function ListProperty() {
                         className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
-                    
+
+                    <div>
+                      <label className="block text-lg font-semibold text-text-primary mb-2">
+                        Looking Fee (₦)
+                        <span className="text-sm text-text-muted ml-2">(Fee charged to schedule a viewing)</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="looking_fee"
+                        value={formData.looking_fee}
+                        onChange={handleChange}
+                        placeholder="e.g. 5000"
+                        min="0"
+                        max="1000000000"
+                        className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-lg font-semibold text-text-primary mb-2">
                         Location <span className="text-red-500">*</span>
@@ -646,6 +671,7 @@ function ListProperty() {
                       <p><strong>Title:</strong> {formData.title || 'Not set'}</p>
                       <p><strong>Location:</strong> {formData.location || 'Not set'}</p>
                       <p><strong>Price:</strong> ₦{parseInt(formData.price).toLocaleString() || 'Not set'}</p>
+                      <p><strong>Looking Fee:</strong> ₦{parseInt(formData.looking_fee || 0).toLocaleString() || 'Not set'}</p>
                       <p><strong>Type:</strong> {getPropertyTypeLabel(formData.property_type)}</p>
                       <p><strong>Bedrooms:</strong> {formData.no_of_bedrooms || 'N/A'}</p>
                       <p><strong>Bathrooms:</strong> {formData.no_of_bathrooms || 'N/A'}</p>

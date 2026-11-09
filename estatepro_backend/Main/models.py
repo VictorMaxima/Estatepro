@@ -48,7 +48,7 @@ class AppUser(AbstractUser):
     phone_number = models.CharField(blank=True, default='')
     referral_code = models.CharField(max_length=45, blank=True)
     invite_code = models.CharField(max_length=45, blank=True)
-    
+
 
 class AgentApplication(models.Model):
     agent = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="agent_application")
@@ -59,11 +59,7 @@ class AgentApplication(models.Model):
     id_file = models.FileField(upload_to="id_files")
     license_file = models.FileField(upload_to="licence_files", blank=True, null=True)
 
-class ContactRequest(models.Model):
-    name = models.CharField(max_length=500)
-    email = models.EmailField()
-    phone_number = models.CharField(max_length=400)
-    message = models.TextField(blank=False)
+
 
 class Property(models.Model):
     TYPECHOICES = (("sale", "Sale"), ("rent", "Rent"),("lease", "Lease"), ("shortLet","ShortLet"),("land", "Land"))
@@ -77,6 +73,13 @@ class Property(models.Model):
             MinValueValidator(100),  # minimum value allowed
             MaxValueValidator(1000000000)  # maximum value allowed
         ])
+    looking_fee = models.IntegerField(
+        default=0,
+        validators=[
+            MinValueValidator(0),  # minimum value allowed
+            MaxValueValidator(1000000000)  # maximum value allowed
+        ]
+    )
     property_type = models.CharField(max_length=60, choices=TYPECHOICES)
     size = models.IntegerField(validators=[
             MinValueValidator(100),  # minimum value allowed
@@ -107,6 +110,11 @@ class Property(models.Model):
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="property_pictures")
-    
 
-    
+class ContactRequest(models.Model):
+    name = models.CharField(max_length=500)
+    email = models.EmailField()
+    phone_number = models.CharField(max_length=400)
+    message = models.TextField(blank=False)
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="contact_requests", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

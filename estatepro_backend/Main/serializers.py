@@ -47,6 +47,13 @@ class ContactSerializer(serializers.ModelSerializer):
         model = ContactRequest
         fields = ['name', 'email', 'phone_number', 'message'] 
 
+class PropertyMessageSerializer(serializers.ModelSerializer):
+    """Serializer for a buyer sending a message to a property's agent."""
+    class Meta:
+        model = ContactRequest
+        fields = ['name', 'email', 'phone_number', 'message', 'property']
+        read_only_fields = ['property']
+
 class CreateAgentApplySerializer(serializers.ModelSerializer):
     id_file = serializers.FileField(required=True)
     license_file = serializers.FileField(required=False, allow_null=True)
@@ -79,7 +86,7 @@ class ApplicationListSerializer(serializers.ModelSerializer):
 class CreatePropertyListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Property
-        fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
+        fields = ['title', 'description','location','price','looking_fee','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced']
         
 class CreatePropertyImageSerializer(serializers.ModelSerializer):
@@ -106,7 +113,7 @@ class ListAgentPropertySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Property
-        fields = ['title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
+        fields = ['title', 'description','location','price','looking_fee','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
                   'images', 'id']
 
@@ -115,7 +122,7 @@ class ListPropertySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Property
-        fields = ['title','id', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms','images', ]
+        fields = ['title','id', 'description','location','price','looking_fee','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms','images', ]
 
 class AgentDetailSerializer(serializers.ModelSerializer):
 
@@ -129,7 +136,7 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Property
-        fields = ['agent','title', 'description','location','price','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
+        fields = ['agent','title', 'description','location','price','looking_fee','property_type', 'size', 'no_of_bedrooms','no_of_bathrooms',
                   'swimming_pool', 'parking', 'air_conditioning', 'borehole', 'gym', 'garden', 'wifi', 'furnished', 'balcony', 'generator', 'serviced',
                   'images', 'status', 'id']
         read_only_fields = ['status', 'id']  # status is controlled by the payment flow only

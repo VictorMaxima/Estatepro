@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp -f dist/assets/* ../estatepro_backend/static/assets/",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -18,6 +18,7 @@ function EditProperty() {
     title: '',
     description: '',
     price: '',
+    looking_fee: '',
     location: '',
     property_type: 'sale',
     size: '',
@@ -67,6 +68,7 @@ function EditProperty() {
           title: data.title || '',
           description: data.description || '',
           price: data.price || '',
+          looking_fee: data.looking_fee || '',
           location: data.location || '',
           property_type: data.property_type || 'sale',
           size: data.size || '',
@@ -202,6 +204,12 @@ function EditProperty() {
       return;
     }
 
+    const looking_fee = parseInt(formData.looking_fee);
+    if (isNaN(looking_fee) || looking_fee < 0 || looking_fee > 1000000000) {
+      setError('Looking fee must be between ₦0 and ₦1,000,000,000');
+      return;
+    }
+
     const size = parseInt(formData.size);
     if (isNaN(size) || size < 100 || size > 1000000000) {
       setError('Size must be between 100 and 1,000,000,000 sqm');
@@ -231,6 +239,7 @@ function EditProperty() {
         description: formData.description.trim(),
         location: formData.location.trim(),
         price: Number(formData.price),
+        looking_fee: Number(formData.looking_fee) || 0,
         property_type: formData.property_type,
         size: Number(formData.size),
         no_of_bedrooms: Number(formData.no_of_bedrooms),
@@ -398,7 +407,24 @@ function EditProperty() {
                         className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
-                    
+
+                    <div>
+                      <label className="block text-lg font-semibold text-text-primary mb-2">
+                        Looking Fee (₦)
+                        <span className="text-sm text-text-muted ml-2">(Fee charged to schedule a viewing)</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="looking_fee"
+                        value={formData.looking_fee}
+                        onChange={handleChange}
+                        placeholder="e.g. 5000"
+                        min="0"
+                        max="1000000000"
+                        className="w-full px-6 py-4 border border-border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-lg font-semibold text-text-primary mb-2">
                         Location <span className="text-red-500">*</span>

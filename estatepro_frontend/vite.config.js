@@ -9,11 +9,9 @@ export default defineConfig({
 
   plugins: [react(), tailwindcss()],
 
-  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      
     },
   },
 
@@ -24,14 +22,24 @@ export default defineConfig({
     strictPort: true,     
   },
 
-  
   build: {
     outDir: 'dist',       
     sourcemap: true,      
     minify: 'esbuild',    
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/index-3DnOkztr.js',
+        chunkFileNames: 'assets/index-3DnOkztr.js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return 'assets/index-CtS4WT8Z.css';
+          }
+          return 'assets/[name].[ext]';
+        },
+      },
+    },
   },
 
-  
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },

@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("api/payment/initialize/<int:property_id>/", views.InitializePaymentView.as_view()),
+    path("api/payment/viewing-fee/<int:property_id>/", views.InitializeViewingFeeView.as_view()),
     path("api/payment/transaction/<str:reference>/", views.MyTransactionView.as_view()),
     path("api/payment/confirm-viewing/<int:txn_id>/", views.ConfirmViewingView.as_view()),
     path("api/payment/dispute/<int:txn_id>/", views.DisputeView.as_view()),

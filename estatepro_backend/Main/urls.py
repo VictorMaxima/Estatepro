@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
     RegisterView, VerifyEmail, AgentApplyView, refresh_token_view,
-    ContactUsView, AgentApplicationList, AgentApprovalView, CreatePropertyListingView, CreatePropertyImageView,
+    ContactUsView, PropertyMessageView, AgentApplicationList, AgentApprovalView, CreatePropertyListingView, CreatePropertyImageView,
     ListAgentPropertiesView, ListPropertiesView, PropertyDetailView, EditPropertyView, DeletePropertyImageView,
     login_view, logout_view, DeletePropertyView, csrf_token)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/token/', login_view, name='token_obtain_pair'),
     path('api/token/refresh/', refresh_token_view, name='token_refresh'),
     path('api/contact', ContactUsView.as_view(), name='contact_us'),
+        path('api/properties/<int:property_id>/message/', PropertyMessageView.as_view(), name='property_message'),
     path('api/agent_apply', AgentApplyView.as_view(), name='agent_apply'),
     path('api/list_applications', AgentApplicationList.as_view(), name='list_application'),
     path('api/approve_application/<int:id>/', AgentApprovalView.as_view(), name='approve-agent'),

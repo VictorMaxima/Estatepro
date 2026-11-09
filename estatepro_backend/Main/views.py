@@ -8,7 +8,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status, viewsets, permissions
 from django.shortcuts import render
 from django.contrib.auth.backends import BaseBackend
-from .serializers import (LoginSerializer, RegisterSerializer, CreateAgentApplySerializer, ContactSerializer, ApplicationListSerializer,
+from .serializers import (LoginSerializer, RegisterSerializer, CreateAgentApplySerializer, ContactSerializer, PropertyMessageSerializer, ApplicationListSerializer,
                           CreatePropertyListingSerializer, CreatePropertyImageSerializer, ListAgentPropertySerializer, ListPropertySerializer, PropertyDetailSerializer,
                             )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
@@ -127,6 +127,25 @@ class ContactUsView(CreateAPIView):
         return Response(serializer.errors)
 
 
+class PropertyMessageView(CreateAPIView):
+    """Allows a logged-in buyer to send a message to a property's agent."""
+    queryset = ContactRequest.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+    serializer_class = PropertyMessageSerializer
+
+    def post(self, request, property_id):
+        prop = get_object_or_404(Property, id=property_id)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(property=prop,
+                        name=request.user.full_name or request.user.email,
+                        email=request.user.email,
+                        phone_number=request.user.phone_number or '')
+        return Response({'message': 'Message sent to agent'},
+                        status=status.HTTP_201_CREATED)
+
+
 class AgentApplyView(CreateAPIView):
     queryset = AgentApplication.objects.all()
     serializer_class = CreateAgentApplySerializer
@@ -208,7 +227,7 @@ class ListAgentPropertiesView(APIView):
         if not self.request.user.agent_status:
             raise ValidationError("Apply to be an agent first before trying to list a property")
         properties = request.user.listings.all()
-        serializer = ListAgentPropertySerializer(properties, many=True)
+        serializer = ListAgentPropertySerializer(properties, many=True, context={'request': request})
         return Response(serializer.data)
 
 class ListPropertiesView(APIView):
@@ -216,7 +235,7 @@ class ListPropertiesView(APIView):
     permission_classes = [permissions.AllowAny]
     def get(self, request):
         properties = Property.objects.all()
-        serializer = ListPropertySerializer(properties, many=True)
+        serializer = ListPropertySerializer(properties, many=True, context={'request': request})
         return Response(serializer.data)
 
 class PropertyDetailView(APIView):
@@ -225,7 +244,7 @@ class PropertyDetailView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     def get(self, request, id):
         property = get_object_or_404(Property, id=id)
-        serializer = PropertyDetailSerializer(property)
+        serializer = PropertyDetailSerializer(property, context={'request': request})
         if request.user.is_authenticated:
             txn = (Transaction.objects.filter(property=property, buyer=request.user)
                    .exclude(status="failed").order_by("-created_at").first())
@@ -278,7 +297,7 @@ class EditPropertyView(APIView):
             )
 
         # Update the property
-        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=False)
+        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=False, context={'request': request})
 
         if serializer.is_valid():
             serializer.save()
@@ -316,7 +335,7 @@ class EditPropertyView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=True)
+        serializer = PropertyDetailSerializer(property_obj, data=request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
             serializer.save()

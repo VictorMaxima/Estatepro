@@ -9,9 +9,12 @@ function PropertyCard({ property, linkTo }) {
   }
 
   // Safe fallbacks for all fields
-  const imageUrl = property?.images?.[0]?.image_url 
-  ? `${BASE_URL}${property.images[0].image_url}` 
-  : 'https://via.placeholder.com/1200x800?text=Property+Image';
+  const rawImageUrl = property?.images?.[0]?.image_url;
+    const imageUrl = rawImageUrl
+      ? rawImageUrl.startsWith('http')
+        ? rawImageUrl
+        : `${BASE_URL}${rawImageUrl}`
+      : 'https://via.placeholder.com/1200x800?text=Property+Image';
   const title = property.title || 'Untitled Property';
   const price = property.price ? `₦${parseInt(property.price).toLocaleString()}` : 'Price on Request';
   const location = property.location || 'Location N/A';
