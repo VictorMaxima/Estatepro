@@ -5,7 +5,7 @@ import ProfileDropdown from '../ProfileDropdown';
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, isAgent } = useAuth(); // Get isAgent from auth context
+  const { user, isAgent, logout } = useAuth(); // Get isAgent and logout from auth context
 
   const closeMenu = () => setMobileMenuOpen(false);
 
@@ -196,20 +196,6 @@ function Header() {
               <div className="border-t border-border pt-6 space-y-4">
                 {user ? (
                   <>
-                    <Link
-                      to="/profile"
-                      onClick={closeMenu}
-                      className="block text-center font-medium text-text-primary py-3"
-                    >
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/my-properties"
-                      onClick={closeMenu}
-                      className="block text-center font-medium text-text-primary py-3"
-                    >
-                      My Properties
-                    </Link>
                     <button
                       onClick={() => {
                         logout();
@@ -273,16 +259,6 @@ function Header() {
                   </Link>
                 )}
 
-                {/* Mobile: List Property for approved agents */}
-                {user && (user.is_agent === 'approved' || user.is_agent === true) && (
-                  <Link
-                    to="/list-property"
-                    onClick={closeMenu}
-                    className="block text-center bg-white text-primary font-bold py-4 rounded-xl hover:bg-gray-100 transition"
-                  >
-                    List Your Property
-                  </Link>
-                )}
               </div>
             </nav>
           </div>

@@ -113,6 +113,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -124,7 +126,16 @@ export function AuthProvider({ children }) {
       const savedUser = localStorage.getItem('homemuUser');
       if (savedUser) {
         try {
-          setUser(JSON.parse(savedUser));
+          const parsed = JSON.parse(savedUser);
+          const userData = parsed.user || parsed;
+          const timestamp = parsed.timestamp || 0;
+          const isExpired = Date.now() - timestamp > FIVE_HOURS_MS;
+
+          if (isExpired) {
+            localStorage.removeItem('homemuUser');
+          } else {
+            setUser(userData);
+          }
           // Optional: verify the session is still alive
           // await api.get('/me/');  // uncomment if you have such an endpoint
         } catch (e) {
@@ -146,7 +157,10 @@ export function AuthProvider({ children }) {
         email,
         isAgent: response.data.is_agent || false,
       };
-      localStorage.setItem('homemuUser', JSON.stringify(userInfo));
+      localStorage.setItem(
+        'homemuUser',
+        JSON.stringify({ user: userInfo, timestamp: Date.now() })
+      );
       setUser(userInfo);
       return { success: true, user: userInfo };
     } catch (error) {
@@ -177,7 +191,12 @@ export function AuthProvider({ children }) {
   const updateUser = (updatedFields) => {
     if (!user) return;
     const updated = { ...user, ...updatedFields };
-    localStorage.setItem('homemuUser', JSON.stringify(updated));
+    const existing = localStorage.getItem('homemuUser');
+    const timestamp = existing ? JSON.parse(existing).timestamp : Date.now();
+    localStorage.setItem(
+      'homemuUser',
+      JSON.stringify({ user: updated, timestamp })
+    );
     setUser(updated);
   };
 

@@ -56,6 +56,47 @@ function Login() {
     }
   };
 
+  const handleAgentLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    // Basic client-side validation
+    if (!email.trim()) {
+      setError('Please enter your email');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await login(email.trim(), password);
+      
+      if (result.success) {
+        if (result.user?.isAgent) {
+          navigate('/agent-dashboard');
+        } else {
+          setPopupMessage('This account is not registered as an agent. Please contact support or use the regular login.');
+          setShowPopup(true);
+        }
+      } else {
+        setPopupMessage(result.error || 'Invalid email or password. Please try again.');
+        setShowPopup(true);
+      }
+    } catch (err) {
+      console.error('Agent login error:', err);
+      setPopupMessage('An error occurred during agent login. Please try again.');
+      setShowPopup(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Close popup
   const closePopup = () => {
     setShowPopup(false);
@@ -149,6 +190,15 @@ function Login() {
             }`}
           >
             {loading ? 'Logging in...' : 'Login'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleAgentLogin}
+            disabled={loading}
+            className={`w-full py-5 text-xl font-bold disabled:opacity-70 transition border-2 border-primary text-primary hover:bg-primary hover:text-white`}
+          >
+            {loading ? 'Logging in...' : 'Login as Agent'}
           </button>
         </form>
 
