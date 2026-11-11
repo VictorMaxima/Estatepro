@@ -26,7 +26,8 @@ urlpatterns = [
     path('api/agent/properties/<int:property_id>', EditPropertyView.as_view(), name='edit-property'),
     path('api/property/images/<int:image_id>', DeletePropertyImageView.as_view(), name='delete-property-image'),
     path('api/property/<int:property_id>/delete', DeletePropertyView.as_view(), name='delete_property'),
-    path('api/get-csrf-token/', csrf_token, name="csrf_handler")
+    path('api/logout/', logout_view, name='logout'),
+        path('api/get-csrf-token/', csrf_token, name="csrf_handler")
 ]
 
 
